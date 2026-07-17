@@ -1,0 +1,7 @@
+Options -Indexes
+RewriteEngine On
+RewriteBase /dashboard/
+
+# Allow direct access to existing files
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]

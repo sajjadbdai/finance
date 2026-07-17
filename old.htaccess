@@ -1,0 +1,7 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^$ dashboard/index.php [L]
+  RewriteRule ^index\.php$ dashboard/index.php [L]
+</IfModule>

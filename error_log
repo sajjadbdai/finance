@@ -1,0 +1,90 @@
+[19-Jun-2026 06:03:00 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:03:00 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:03:04 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:03:04 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:03:14 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:03:14 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:04:54 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:04:54 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:05:58 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:05:58 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:06:00 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:06:00 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:09:33 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:09:33 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:09:35 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:09:35 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:09:39 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:09:39 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:09:44 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:09:44 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:10:20 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:10:20 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:10:22 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:10:22 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:12:05 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:12:05 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:12:14 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:12:14 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:12:41 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:12:41 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:19:13 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:19:13 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:19:55 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:19:55 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:19:57 UTC] PHP Warning:  require_once(/home/sajjadbd/finance.sajjad.bd/../config.php): Failed to open stream: No such file or directory in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2
+[19-Jun-2026 06:19:57 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/sajjadbd/finance.sajjad.bd/../config.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/sajjadbd/finance.sajjad.bd/accounts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/sajjadbd/finance.sajjad.bd/accounts.php on line 2

@@ -1,0 +1,13 @@
+Options -Indexes
+RewriteEngine On
+
+# If request is for existing file/directory, serve it directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Rewrite root to dashboard
+RewriteRule ^$ /dashboard/index.php [L]
+
+# Clean URLs - map /accounts to /dashboard/accounts.php etc
+RewriteRule ^dashboard/(.*)$ /dashboard/$1 [L]
