@@ -1,0 +1,5 @@
+config.php
+old.php
+*.log
+storage/
+*.zip
