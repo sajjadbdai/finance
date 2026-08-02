@@ -148,17 +148,17 @@ tr:nth-child(even) td{background:#f9f9f9;}
   <strong><?=htmlspecialchars($account['name'])?></strong> &nbsp;
   <span style="color:#666;"><?=htmlspecialchars($account['group_name'])?> · <?=$account['currency']?> · <?=ucfirst($account['type'])?></span>
   <?php if($account['is_credit_card'] && $account['credit_limit']):?>
-  &nbsp;|&nbsp; Credit Limit: <?=$account['currency']?> <?=number_format((float)$account['credit_limit'],2)?>
+  &nbsp;|&nbsp; Credit Limit: <?=$account['currency']?> <?=money((float)$account['credit_limit'], $account['currency'])?>
   <?php endif;?>
 </div>
 <?php endif;?>
 
 <div class="summary">
-  <div class="sbox"><div class="slabel">Total Income</div><div class="sval green">BD <?=number_format($totalInc,3)?></div></div>
-  <div class="sbox"><div class="slabel">Total Expense</div><div class="sval red">BD <?=number_format($totalExp,3)?></div></div>
+  <div class="sbox"><div class="slabel">Total Income</div><div class="sval green">BD <?=money($totalInc)?></div></div>
+  <div class="sbox"><div class="slabel">Total Expense</div><div class="sval red">BD <?=money($totalExp)?></div></div>
   <div class="sbox"><?php $net=$totalInc-$totalExp;?>
     <div class="slabel">Net</div>
-    <div class="sval <?=$net>=0?'green':'red'?>">BD <?=number_format($net,3)?></div>
+    <div class="sval <?=$net>=0?'green':'red'?>">BD <?=money($net)?></div>
   </div>
 </div>
 
@@ -175,9 +175,9 @@ tr:nth-child(even) td{background:#f9f9f9;}
   <tr class="row-opening">
     <td><?=date('d M Y',strtotime($dateFrom))?></td>
     <td colspan="<?=$account?3:5?>"><em>Opening Balance</em></td>
-    <td class="blue"><em><?=number_format($openingBalance,3)?> <?=$account['currency']?></em></td>
+    <td class="blue"><em><?=money($openingBalance, $account['currency'])?> <?=$account['currency']?></em></td>
     <?php if($account['currency']!=='BHD'): $openBHD=toBHD($openingBalance,$account['currency']); ?>
-    <td class="blue" style="font-size:10px;"><em>≈ BD <?=number_format($openBHD,3)?></em></td>
+    <td class="blue" style="font-size:10px;"><em>≈ BD <?=money($openBHD)?></em></td>
     <?php else:?><td></td><?php endif;?>
   </tr>
   <?php endif;?>
@@ -201,10 +201,10 @@ tr:nth-child(even) td{background:#f9f9f9;}
     // Display amount with sign
     if ($account) {
         $dispAmt = ($t['type']==='expense' || ($t['type']==='transfer' && $isSource))
-            ? '-'.number_format((float)$t['amount'],3)
-            : number_format((float)$t['amount'],3);
+            ? '-'.money((float)$t['amount'])
+            : money((float)$t['amount']);
     } else {
-        $dispAmt = ($t['type']==='expense'?'-':'').number_format((float)$t['amount'],3);
+        $dispAmt = ($t['type']==='expense'?'-':'').money((float)$t['amount']);
     }
 
     $otherAcc = $account
@@ -222,11 +222,11 @@ tr:nth-child(even) td{background:#f9f9f9;}
     <td><?=htmlspecialchars($t['category']??'')?><?=$t['subcategory']?' › '.htmlspecialchars($t['subcategory']):''?></td>
     <td><?=htmlspecialchars($t['note']??'')?></td>
     <?php if(!$account):?>
-    <td><?=number_format((float)$t['amount_bhd'],3)?></td>
+    <td><?=money((float)$t['amount_bhd'])?></td>
     <?php else:?>
-    <td class="<?=$runBal<0?'red':'green'?>"><?=number_format($runBal,3)?></td>
+    <td class="<?=$runBal<0?'red':'green'?>"><?=money($runBal)?></td>
     <?php if($account['currency']!=='BHD'):?>
-    <td style="color:#666;font-size:10px;">≈ <?=number_format(toBHD($runBal,$account['currency']),3)?></td>
+    <td style="color:#666;font-size:10px;">≈ <?=money(toBHD($runBal,$account['currency']))?></td>
     <?php endif;?>
     <?php endif;?>
   </tr>
@@ -236,9 +236,9 @@ tr:nth-child(even) td{background:#f9f9f9;}
   <tr class="row-closing">
     <td><?=date('d M Y',strtotime($dateTo))?></td>
     <td colspan="<?=$account?3:5?>"><strong>Closing Balance</strong></td>
-    <td class="<?=$runBal<0?'red':'green'?>"><strong><?=number_format($runBal,3)?> <?=$account['currency']?></strong></td>
+    <td class="<?=$runBal<0?'red':'green'?>"><strong><?=money($runBal, $account['currency'])?> <?=$account['currency']?></strong></td>
     <?php if($account['currency']!=='BHD'): $runBHD=toBHD($runBal,$account['currency']); ?>
-    <td class="<?=$runBHD<0?'red':'green'?>" style="font-size:10px;">≈ BD <?=number_format($runBHD,3)?></td>
+    <td class="<?=$runBHD<0?'red':'green'?>" style="font-size:10px;">≈ BD <?=money($runBHD)?></td>
     <?php else:?><td></td><?php endif;?>
   </tr>
   <?php endif;?>

@@ -53,15 +53,15 @@ function sendDailyReport(int $chatId): void {
     $cats = $st2->fetchAll();
 
     $msg  = "🌙 <b>Daily Report — " . date('d M Y') . "</b>\n\n";
-    $msg .= "🟢 Income:  BD " . number_format($stats['income'],  3) . " ({$cnts['income']} txns)\n";
-    $msg .= "🔴 Expense: BD " . number_format($stats['expense'], 3) . " ({$cnts['expense']} txns)\n";
+    $msg .= "🟢 Income:  BD " . money($stats['income']) . " ({$cnts['income']} txns)\n";
+    $msg .= "🔴 Expense: BD " . money($stats['expense']) . " ({$cnts['expense']} txns)\n";
     $net  = $stats['income'] - $stats['expense'];
-    $msg .= "💰 Net:     BD " . number_format($net, 3) . "\n";
+    $msg .= "💰 Net:     BD " . money($net) . "\n";
 
     if ($cats) {
         $msg .= "\n<b>Top Expenses:</b>\n";
         foreach ($cats as $c) {
-            $msg .= "  • {$c['category']}: BD " . number_format($c['total'], 3) . "\n";
+            $msg .= "  • {$c['category']}: BD " . money($c['total']) . "\n";
         }
     }
 
@@ -72,7 +72,7 @@ function sendDailyReport(int $chatId): void {
     $mst->execute([$month]);
     $mstats = ['income' => 0, 'expense' => 0];
     foreach ($mst->fetchAll() as $r) $mstats[$r['type']] = (float)$r['total'];
-    $msg .= "\n📅 <b>" . date('M') . " so far:</b> Saved BD " . number_format($mstats['income'] - $mstats['expense'], 3);
+    $msg .= "\n📅 <b>" . date('M') . " so far:</b> Saved BD " . money($mstats['income'] - $mstats['expense']);
     $msg .= "\n🌐 " . SITE_URL;
 
     tgSend($chatId, $msg);
@@ -98,16 +98,16 @@ function sendWeeklyReport(int $chatId): void {
 
     $msg  = "📈 <b>Weekly Report</b>\n";
     $msg .= date('d M', strtotime($from)) . " – " . date('d M Y', strtotime($to)) . "\n\n";
-    $msg .= "🟢 Income:  BD " . number_format($inc, 3) . "\n";
-    $msg .= "🔴 Expense: BD " . number_format($exp, 3) . "\n";
-    $msg .= "💰 Saved:   BD " . number_format($inc - $exp, 3) . "\n\n";
+    $msg .= "🟢 Income:  BD " . money($inc) . "\n";
+    $msg .= "🔴 Expense: BD " . money($exp) . "\n";
+    $msg .= "💰 Saved:   BD " . money($inc - $exp) . "\n\n";
 
     if ($expCats) {
         $msg .= "<b>Expenses Breakdown:</b>\n";
         foreach (array_slice($expCats, 0, 8) as $c) {
             $pct  = $exp > 0 ? round(($c['total'] / $exp) * 100) : 0;
             $bar  = str_repeat('█', max(1,(int)($pct/10))) . str_repeat('░', 10-max(1,(int)($pct/10)));
-            $msg .= "{$bar} {$c['category']}: BD " . number_format($c['total'],3) . " ({$pct}%)\n";
+            $msg .= "{$bar} {$c['category']}: BD " . money($c['total']) . " ({$pct}%)\n";
         }
     }
 
@@ -131,10 +131,10 @@ function sendMonthlyReport(int $chatId): void {
     $nw = db()->query("SELECT SUM(CASE WHEN type='asset' THEN balance*1 ELSE balance END) as total FROM accounts WHERE is_active=1")->fetchColumn();
 
     $msg  = "🗓 <b>Monthly Report — {$monthName}</b>\n\n";
-    $msg .= "🟢 Income:  BD " . number_format($stats['income'],  3) . " ({$cnts['income']} txns)\n";
-    $msg .= "🔴 Expense: BD " . number_format($stats['expense'], 3) . " ({$cnts['expense']} txns)\n";
-    $msg .= "💰 Saved:   BD " . number_format($stats['income'] - $stats['expense'], 3) . "\n\n";
-    $msg .= "💎 Current Net Worth: BD " . number_format((float)$nw, 3) . "\n";
+    $msg .= "🟢 Income:  BD " . money($stats['income']) . " ({$cnts['income']} txns)\n";
+    $msg .= "🔴 Expense: BD " . money($stats['expense']) . " ({$cnts['expense']} txns)\n";
+    $msg .= "💰 Saved:   BD " . money($stats['income'] - $stats['expense']) . "\n\n";
+    $msg .= "💎 Current Net Worth: BD " . money((float)$nw) . "\n";
     $msg .= "\n🌐 Full report: " . SITE_URL;
 
     tgSend($chatId, $msg);

@@ -2,7 +2,7 @@
 require_once __DIR__ . '/db.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
-$pageTitle = 'Import Portfolio PDF'; $activePage = 'portfolio';
+$pageTitle = 'Import Portfolio PDF'; $activePage = 'portfolio'; $backTo = 'portfolio.php';
 
 $extracted = null;
 $error     = null;
@@ -129,10 +129,10 @@ require 'header.php';
         <tr>
             <td><strong><?=htmlspecialchars($item['symbol'])?></strong></td>
             <td style="text-align:right;">
-                <?=number_format($item['price'],2)?> BDT
+                <?=money($item['price'])?> BDT
                 <?php if($oldPrice>0): ?>
                 <br><small style="color:<?=$changeColor?>;">
-                    <?=$change>=0?'+':''?><?=number_format($change,2)?> (was <?=number_format($oldPrice,2)?>)
+                    <?=$change>=0?'+':''?><?=money($change)?> (was <?=money($oldPrice)?>)
                 </small>
                 <?php endif; ?>
             </td>

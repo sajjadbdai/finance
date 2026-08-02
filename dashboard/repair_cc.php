@@ -86,11 +86,11 @@ $cards = db()->query("SELECT * FROM accounts WHERE is_credit_card=1 AND is_activ
     <span class="badge <?=$ok?'badge-inc':'badge-exp'?>"><?=$ok?'✅ OK':'❌ Mismatch'?></span>
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;font-size:.85rem;">
-    <div><div style="color:var(--muted);margin-bottom:4px;">Balance (stored)</div><div style="font-weight:700;color:var(--red);"><?=number_format($actual,3)?> <?=$card['currency']?></div></div>
-    <div><div style="color:var(--muted);margin-bottom:4px;">Payable</div><div style="font-weight:700;color:var(--red);"><?=number_format((float)$card['payable_balance'],3)?> <?=$card['currency']?></div></div>
-    <div><div style="color:var(--muted);margin-bottom:4px;">Outstanding</div><div style="font-weight:700;color:var(--orange);"><?=number_format((float)$card['outstanding_balance'],3)?> <?=$card['currency']?></div></div>
+    <div><div style="color:var(--muted);margin-bottom:4px;">Balance (stored)</div><div style="font-weight:700;color:var(--red);"><?=money($actual, $card['currency'])?> <?=$card['currency']?></div></div>
+    <div><div style="color:var(--muted);margin-bottom:4px;">Payable</div><div style="font-weight:700;color:var(--red);"><?=money((float)$card['payable_balance'], $card['currency'])?> <?=$card['currency']?></div></div>
+    <div><div style="color:var(--muted);margin-bottom:4px;">Outstanding</div><div style="font-weight:700;color:var(--orange);"><?=money((float)$card['outstanding_balance'], $card['currency'])?> <?=$card['currency']?></div></div>
   </div>
-  <?php if(!$ok):?><div style="font-size:.82rem;color:var(--red);margin-bottom:10px;">Expected balance: <?=number_format($expected,3)?></div><?php endif;?>
+  <?php if(!$ok):?><div style="font-size:.82rem;color:var(--red);margin-bottom:10px;">Expected balance: <?=money($expected)?></div><?php endif;?>
   <!-- Manual override -->
   <form method="POST" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
     <input type="hidden" name="card_id" value="<?=$card['id']?>">

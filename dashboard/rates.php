@@ -2,7 +2,7 @@
 require_once __DIR__ . '/db.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
-$pageTitle='Exchange Rates'; $activePage='rates';
+$pageTitle='Exchange Rates'; $activePage='rates'; $backTo='index.php';
 $msg='';
 
 // Get base currency from settings (stored in exchange_rates or a settings table)
@@ -123,7 +123,7 @@ require 'header.php';
           <td style="font-weight:700;"><?=$r['from_cur']?></td>
           <td><?=$r['to_cur']?></td>
           <td style="font-weight:600;color:var(--blue);"><?=number_format((float)$r['rate'],6)?></td>
-          <td style="color:var(--muted);font-size:.82rem;"><?=$r['from_cur']?> <?=number_format($inverse,2)?></td>
+          <td style="color:var(--muted);font-size:.82rem;"><?=$r['from_cur']?> <?=money($inverse)?></td>
           <td style="color:var(--muted);font-size:.8rem;"><?=date('d M H:i',strtotime($r['updated_at']??'now'))?></td>
           <td>
             <form method="POST" style="display:inline;">

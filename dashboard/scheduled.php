@@ -115,6 +115,7 @@ $due = array_filter($schedules, function($s) {
 
 $pageTitle  = 'Scheduled Payments';
 $activePage = 'scheduled';
+$backTo = 'index.php';
 require __DIR__ . '/header.php';
 ?>
 
@@ -225,7 +226,7 @@ require __DIR__ . '/header.php';
       </div>
       <div style="text-align:right;">
         <?php $tc=$s['type']==='income'?'c-green':($s['type']==='expense'?'c-red':'c-blue');?>
-        <div class="<?=$tc?>" style="font-weight:700;"><?=number_format((float)$s['amount'],2)?> <?=$s['currency']?></div>
+        <div class="<?=$tc?>" style="font-weight:700;"><?=money((float)$s['amount'], $s['currency'])?> <?=$s['currency']?></div>
         <div style="font-size:.75rem;color:var(--muted);">Next: <?=$s['next_run']?> <?=$isDue?'<span class="due-badge">DUE</span>':''?></div>
       </div>
     </div>

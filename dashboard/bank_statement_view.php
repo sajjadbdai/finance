@@ -10,7 +10,7 @@ $st=db()->prepare("SELECT bs.*,a.name as acc_name,a.id as acc_id FROM bank_state
 $st->execute([$id]); $stmt=$st->fetch();
 if(!$stmt){ header('Location: /dashboard/bank_statements.php'); exit; }
 
-$pageTitle='Statement: '.$stmt['acc_name']; $activePage='bank_statements';
+$pageTitle='Statement: '.$stmt['acc_name']; $activePage='bank_statements'; $backTo='bank_statements.php';
 $msg=$_GET['msg']??'';
 
 // Handle auto-import transaction
@@ -78,19 +78,19 @@ require 'header.php'; ?>
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
             <div style="text-align:right;">
                 <div class="card-title">Opening</div>
-                <div data-hide="true" style="font-weight:700;color:var(--muted);"><?=number_format($stmt['opening_balance'],3)?> <?=$stmt['currency']?></div>
+                <div data-hide="true" style="font-weight:700;color:var(--muted);"><?=money($stmt['opening_balance'], $stmt['currency'])?> <?=$stmt['currency']?></div>
             </div>
             <div style="text-align:right;">
                 <div class="card-title">Closing</div>
-                <div data-hide="true" style="font-weight:700;color:var(--blue);"><?=number_format($stmt['closing_balance'],3)?> <?=$stmt['currency']?></div>
+                <div data-hide="true" style="font-weight:700;color:var(--blue);"><?=money($stmt['closing_balance'], $stmt['currency'])?> <?=$stmt['currency']?></div>
             </div>
             <div style="text-align:right;">
                 <div class="card-title">Credits</div>
-                <div data-hide="true" style="font-weight:700;color:var(--green);">+<?=number_format($stmt['total_credits'],3)?></div>
+                <div data-hide="true" style="font-weight:700;color:var(--green);">+<?=money($stmt['total_credits'])?></div>
             </div>
             <div style="text-align:right;">
                 <div class="card-title">Debits</div>
-                <div data-hide="true" style="font-weight:700;color:var(--red);">-<?=number_format($stmt['total_debits'],3)?></div>
+                <div data-hide="true" style="font-weight:700;color:var(--red);">-<?=money($stmt['total_debits'])?></div>
             </div>
         </div>
     </div>
@@ -151,9 +151,9 @@ require 'header.php'; ?>
                 <br><small style="color:var(--green);">→ <?=htmlspecialchars($l['txn_note'])?></small>
                 <?php endif;?>
             </td>
-            <td data-hide="true" style="text-align:right;color:var(--red);"><?=$l['debit']>0?number_format($l['debit'],3):'—'?></td>
-            <td data-hide="true" style="text-align:right;color:var(--green);"><?=$l['credit']>0?number_format($l['credit'],3):'—'?></td>
-            <td data-hide="true" style="text-align:right;"><?=$l['balance']>0?number_format($l['balance'],3):'—'?></td>
+            <td data-hide="true" style="text-align:right;color:var(--red);"><?=$l['debit']>0?money($l['debit']):'—'?></td>
+            <td data-hide="true" style="text-align:right;color:var(--green);"><?=$l['credit']>0?money($l['credit']):'—'?></td>
+            <td data-hide="true" style="text-align:right;"><?=$l['balance']>0?money($l['balance']):'—'?></td>
             <td><span style="color:<?=$statusColor?>;font-size:.75rem;font-weight:600;"><?=ucfirst($l['match_status'])?></span></td>
             <td>
                 <?php if($l['match_status']==='unmatched'):?>

@@ -57,11 +57,11 @@ $st=db()->prepare("INSERT INTO networth_history (snapshot_date,bank_cash,portfol
 $st->execute([$snapDate,round($bankCash,4),round($portBHD,4),round($fixedBHD,4),round($liabilities,4),round($netWorth,4)]);
 
 $msg = "📸 Monthly Snapshot Saved\n".date('M Y')."\n\n";
-$msg .= "💎 Net Worth: BD ".number_format($netWorth,2)."\n";
-$msg .= "🏦 Bank: BD ".number_format($bankCash,2)."\n";
-$msg .= "📈 Portfolio: BD ".number_format($portBHD,2)."\n";
-if($fixedBHD>0) $msg .= "🏠 Fixed: BD ".number_format($fixedBHD,2)."\n";
-$msg .= "💳 Liabilities: BD ".number_format(abs($liabilities),2)."\n";
+$msg .= "💎 Net Worth: BD ".money($netWorth)."\n";
+$msg .= "🏦 Bank: BD ".money($bankCash)."\n";
+$msg .= "📈 Portfolio: BD ".money($portBHD)."\n";
+if($fixedBHD>0) $msg .= "🏠 Fixed: BD ".money($fixedBHD)."\n";
+$msg .= "💳 Liabilities: BD ".money(abs($liabilities))."\n";
 
 echo $msg;
 

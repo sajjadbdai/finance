@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/ledger.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
 
@@ -39,11 +40,34 @@ if(isset($_POST['do_save'])){
     elseif(!$accId) { $error='Account required.'; }
     elseif($type==='transfer'&&!$toAccId) { $error='Destination account required for transfer.'; }
     else {
+        // ── Anomaly detection: likely-duplicate check ───────────────────
+        // Same account, same type, same amount (±0.01), same category,
+        // within 3 days of the entered date. Only for NEW transactions —
+        // edits are corrections, not new events, so they skip this.
+        // Confirming once (confirm_duplicate=1) bypasses the check for
+        // that specific resubmission.
+        $duplicates = [];
+        if (!$isEdit && !isset($_POST['confirm_duplicate'])) {
+            $dupSt = db()->prepare(
+                "SELECT id,txn_date,amount,currency,category,note FROM transactions
+                 WHERE account_id=? AND type=? AND ABS(amount-?)<0.01 AND category=?
+                   AND ABS(DATEDIFF(txn_date,?)) <= 3
+                 ORDER BY txn_date DESC"
+            );
+            $dupSt->execute([$accId, $type, $amount, $cat, $txnDate]);
+            $duplicates = $dupSt->fetchAll();
+        }
+
+        if ($duplicates) {
+            // Don't save yet — render a confirmation step below instead.
+            $pendingDuplicate = ['duplicates'=>$duplicates, 'post'=>$_POST];
+        } else {
         try {
             $bhd = toBHD($amount, $currency);
+            $ledgerDesc = ucfirst($type) . ($cat ? " — {$cat}" : '') . ($note ? " — {$note}" : '');
 
             if($isEdit) {
-                // Reverse old transaction
+                // Reverse old transaction's balance effect
                 $old=db()->prepare("SELECT * FROM transactions WHERE id=?");$old->execute([$editId]);$oldR=$old->fetch();
                 if($oldR){
                     if($oldR['type']==='expense')  updateAccountBalance($oldR['account_id'],  (float)$oldR['amount']);
@@ -53,11 +77,15 @@ if(isset($_POST['do_save'])){
                         if($oldR['to_account_id']) updateAccountBalance($oldR['to_account_id'], -(float)$oldR['amount']);
                     }
                 }
+                // Remove old ledger legs for this transaction before re-posting fresh ones
+                clearLedgerForTxn($editId);
                 db()->prepare("UPDATE transactions SET txn_date=?,type=?,amount=?,currency=?,amount_bhd=?,account_id=?,to_account_id=?,category=?,subcategory=?,note=? WHERE id=?")
                 ->execute([$txnDate,$type,$amount,$currency,$bhd,$accId,$toAccId,$cat,$subcat,$note,$editId]);
+                $txnId = $editId;
             } else {
                 db()->prepare("INSERT INTO transactions (txn_date,type,amount,currency,amount_bhd,account_id,to_account_id,category,subcategory,note,source) VALUES (?,?,?,?,?,?,?,?,?,?,'web')")
                 ->execute([$txnDate,$type,$amount,$currency,$bhd,$accId,$toAccId,$cat,$subcat,$note]);
+                $txnId = (int)db()->lastInsertId();
             }
 
             // Apply balance changes
@@ -68,12 +96,19 @@ if(isset($_POST['do_save'])){
                 updateAccountBalance($toAccId,   $amount);
             }
 
+            // Double-entry ledger, mirroring the same event
+            if($type==='expense')       postExpense($txnId, $txnDate, $ledgerDesc, $accId, $amount, $currency);
+            elseif($type==='income')    postIncome($txnId, $txnDate, $ledgerDesc, $accId, $amount, $currency);
+            elseif($type==='transfer' && $toAccId) postTransfer($txnId, $txnDate, $ledgerDesc, $accId, $toAccId, $amount, $currency);
+
             // Bank charge as separate expense on source account
             if($bankCharge > 0 && ($type==='transfer' || $type==='expense')) {
                 $chgBHD = toBHD($bankCharge, $currency);
                 db()->prepare("INSERT INTO transactions (txn_date,type,amount,currency,amount_bhd,account_id,category,note,source) VALUES (?,?,?,?,?,?,?,?,'web')")
                 ->execute([$txnDate,'expense',$bankCharge,$currency,$chgBHD,$accId,'Bank Charge','Bank charge for: '.$note]);
+                $chgTxnId = (int)db()->lastInsertId();
                 updateAccountBalance($accId, -$bankCharge);
+                postExpense($chgTxnId, $txnDate, 'Bank Charge — '.$note, $accId, $bankCharge, $currency);
             }
 
                 $rt = $_POST['return_to'] ?? '';
@@ -84,15 +119,49 @@ if(isset($_POST['do_save'])){
     }
     exit;
         } catch(Exception $e){ $error=$e->getMessage(); }
+        }
     }
 }
 $pageTitle  = 'Add Transaction';
 $activePage = 'add_txn';
+$backTo = 'accounts.php';
 require __DIR__ . '/header.php';
 ?>
 <div style="max-width:640px;">
 <?php if($error):?><div class="alert alert-danger">❌ <?=htmlspecialchars($error)?></div><?php endif;?>
 <?php if($msg):?><div class="alert alert-success">✅ <?=htmlspecialchars($msg)?></div><?php endif;?>
+
+<?php if(isset($pendingDuplicate)): ?>
+<!-- Likely-duplicate confirmation — nothing has been saved yet -->
+<div class="card" style="border:1px solid var(--orange);">
+  <div class="section-title" style="color:var(--orange);margin-bottom:10px;">⚠️ This looks like a duplicate</div>
+  <div style="font-size:.85rem;color:var(--muted);margin-bottom:12px;">
+    Same account, type, amount and category within 3 days of what you're entering:
+  </div>
+  <table class="tbl" style="font-size:.82rem;margin-bottom:16px;">
+    <tr><th>Date</th><th style="text-align:right;">Amount</th><th>Note</th></tr>
+    <?php foreach($pendingDuplicate['duplicates'] as $d):?>
+    <tr>
+      <td><?=date('d M Y',strtotime($d['txn_date']))?></td>
+      <td style="text-align:right;" data-hide="true"><?=money((float)$d['amount'], $d['currency'])?> <?=$d['currency']?></td>
+      <td class="c-muted"><?=htmlspecialchars(substr($d['note']??'',0,40))?></td>
+    </tr>
+    <?php endforeach;?>
+  </table>
+  <form method="POST" action="add_transaction.php" style="display:inline;">
+    <?php foreach($pendingDuplicate['post'] as $k=>$v):
+      if ($k === 'confirm_duplicate') continue;
+      if (is_array($v)) continue;
+    ?>
+    <input type="hidden" name="<?=htmlspecialchars($k)?>" value="<?=htmlspecialchars($v)?>">
+    <?php endforeach;?>
+    <input type="hidden" name="confirm_duplicate" value="1">
+    <button type="submit" class="btn btn-primary">✅ Save Anyway — It's Not a Duplicate</button>
+  </form>
+  <a href="<?=htmlspecialchars($_POST['return_to'] ?? '')?:'add_transaction.php'?>" class="btn btn-ghost" style="margin-left:8px;">✕ Cancel</a>
+</div>
+<?php else: ?>
+
 <div class="card">
 <form method="POST" action="add_transaction.php">
 <input type="hidden" name="return_to" value="<?=htmlspecialchars($_GET['return_to']??'')?>">
@@ -115,7 +184,7 @@ require __DIR__ . '/header.php';
   <div class="form-group"><label class="form-label">Amount *</label>
     <input class="form-control" type="number" step="0.001" name="amount" value="<?=htmlspecialchars($data['amount'])?>" placeholder="0.000" required></div>
   <div class="form-group"><label class="form-label">Currency</label>
-    <select class="form-control" name="currency"><?php foreach(['BHD','BDT','USD','GBP','EUR','SAR','AED'] as $c):?><option value="<?=$c?>" <?=$data['currency']===$c?'selected':''?>><?=$c?></option><?php endforeach;?></select></div>
+    <select class="form-control" name="currency" id="currency"><?php foreach(['BHD','BDT','USD','GBP','EUR','SAR','AED'] as $c):?><option value="<?=$c?>" <?=$data['currency']===$c?'selected':''?>><?=$c?></option><?php endforeach;?></select></div>
 </div>
 
 <div class="form-row">
@@ -126,11 +195,11 @@ require __DIR__ . '/header.php';
 </div>
 
 <div class="form-group"><label class="form-label" id="accLabel">Account *</label>
-<select class="form-control" name="account_id" required>
+<select class="form-control" name="account_id" id="account_id" required>
 <option value="">— Select Account —</option>
 <?php $lg='';foreach($accounts as $a){if($a['group_name']!==$lg){if($lg)echo'</optgroup>';echo'<optgroup label="'.htmlspecialchars($a['group_name']).'">';$lg=$a['group_name'];}
 $ccTag=$a['is_credit_card']?' 💳':'';
-?><option value="<?=$a['id']?>" <?=$data['account_id']==$a['id']?'selected':''?>><?=htmlspecialchars($a['name'].$ccTag)?> (<?=$a['currency']?>)</option><?php }if($lg)echo'</optgroup>';?>
+?><option value="<?=$a['id']?>" data-currency="<?=htmlspecialchars($a['currency'])?>" <?=$data['account_id']==$a['id']?'selected':''?>><?=htmlspecialchars($a['name'].$ccTag)?> (<?=$a['currency']?>)</option><?php }if($lg)echo'</optgroup>';?>
 </select></div>
 
 <div class="form-group" id="toAccDiv" style="display:<?=$data['type']==='transfer'?'block':'none'?>">
@@ -170,9 +239,29 @@ $ccTag=$a['is_credit_card']?' 💳':'';
 </form>
 </div>
 </div></div>
+<?php endif; ?>
 
 <script>
 const allCats=<?=json_encode($allCats)?>;
+
+// Default the Currency dropdown to whatever the selected account actually
+// uses — previously it always defaulted to BHD regardless of the account,
+// which meant e.g. a Pubali (BDT) transaction got silently recorded as
+// BHD unless you remembered to change it manually every time.
+function syncCurrencyToAccount(){
+  const accSel = document.getElementById('account_id');
+  const curSel = document.getElementById('currency');
+  const opt = accSel.options[accSel.selectedIndex];
+  const cur = opt ? opt.dataset.currency : '';
+  if (cur) {
+    for (const o of curSel.options) {
+      if (o.value === cur) { curSel.value = cur; break; }
+    }
+  }
+}
+document.getElementById('account_id').addEventListener('change', syncCurrencyToAccount);
+document.addEventListener('DOMContentLoaded', syncCurrencyToAccount);
+
 function onType(){
   const t=document.querySelector('input[name="type"]:checked')?.value||'expense';
   document.getElementById('toAccDiv').style.display=t==='transfer'?'block':'none';

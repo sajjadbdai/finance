@@ -1,6 +1,9 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/ledger.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
 
@@ -25,25 +28,77 @@ if (isset($_POST['do_save'])) {
     $name    = trim($_POST['name']        ?? '');
     $group   = trim($_POST['group_name']  ?? '');
     $currency= trim($_POST['currency']    ?? 'BHD');
-    $balance = (float)($_POST['balance']  ?? 0);
     $type    = trim($_POST['type']        ?? 'asset');
     $isCC    = isset($_POST['is_credit_card']) ? 1 : 0;
     $limit   = (float)($_POST['credit_limit']        ?? 0);
-    $billD   = (int)($_POST['bill_date']              ?? 15);
-    $dueD    = (int)($_POST['payment_due_date']       ?? 4);
+    $billD   = max(1, min(31, (int)($_POST['bill_date']        ?? 15)));
+    $dueD    = max(1, min(31, (int)($_POST['payment_due_date'] ?? 4)));
     $payable = (float)($_POST['payable_balance']      ?? 0);
     $outst   = (float)($_POST['outstanding_balance']  ?? 0);
     $lastStr = trim($_POST['last_string'] ?? '');
+    $adjustToRaw = trim($_POST['adjust_balance'] ?? '');
+    $adjustTo    = str_replace([',',' '], '', $adjustToRaw); // tolerate accidental thousands separators
+    $adjustDate  = trim($_POST['adjust_date'] ?? '') ?: date('Y-m-d');
+
     if (!$name) { $error = 'Name is required.'; }
     else {
         try {
-            db()->prepare("UPDATE accounts SET name=?,group_name=?,currency=?,balance=?,type=?,
+            // Everything EXCEPT balance updates directly — balance is never
+            // written raw here anymore. See the adjustment block below.
+            db()->prepare("UPDATE accounts SET name=?,group_name=?,currency=?,type=?,
                 is_credit_card=?,credit_limit=?,bill_date=?,payment_due_date=?,
                 payable_balance=?,outstanding_balance=?,last_string=?,updated_at=NOW() WHERE id=?")
-            ->execute([$name,$group,$currency,$balance,$type,
+            ->execute([$name,$group,$currency,$type,
                 $isCC,$limit,$billD,$dueD,$payable,$outst,$lastStr,$editId]);
-            $msg = 'saved';
-        } catch(Exception $e) { $error = $e->getMessage(); }
+
+            // ── Balance adjustment: goes through the ledger, never a raw overwrite ──
+            // Comparing against the CURRENT stored balance (read fresh from the
+            // DB, not trusted from any hidden field) so the delta is always
+            // correct even if the page was left open a while. If the entered
+            // figure differs from what's actually stored, the difference is
+            // recorded as a real transaction (category "Adjustment") and
+            // applied through updateAccountBalance() — the same function
+            // every other balance change in the app goes through. This is
+            // exactly the kind of raw "UPDATE accounts SET balance=?" that
+            // caused the earlier drift incidents, now closed off.
+            if ($adjustToRaw !== '') {
+                if (!is_numeric($adjustTo)) {
+                    $error = 'Adjustment value "' . $adjustToRaw . '" isn\'t a valid number — the account name/group WAS still saved, just not the balance adjustment.';
+                } else {
+                    $curSt = db()->prepare("SELECT balance FROM accounts WHERE id=?");
+                    $curSt->execute([$editId]);
+                    $curBal = (float)$curSt->fetchColumn();
+                    $newBal = (float)$adjustTo;
+                    $diff   = $newBal - $curBal;
+
+                    if (abs($diff) > 0.0001) {
+                        $adjType = $diff > 0 ? 'income' : 'expense';
+                        $amt     = abs($diff);
+                        $bhd     = toBHD($amt, $currency);
+                        $note    = 'Manual balance adjustment: ' . money($curBal) . ' → ' . money($newBal);
+                        db()->prepare("INSERT INTO transactions (txn_date,type,amount,currency,amount_bhd,account_id,category,subcategory,note,source) VALUES (?,?,?,?,?,?,?,?,?,'web')")
+                            ->execute([$adjustDate . ' ' . date('H:i:s'), $adjType, $amt, $currency, $bhd, $editId, 'Adjustment', 'Opening Balance Correction', $note]);
+                        $adjTxnId = (int)db()->lastInsertId();
+                        updateAccountBalance($editId, $diff);
+
+                        // Double-entry posting is isolated: if ledger_entries
+                        // doesn't exist yet (migration_double_entry.sql not run),
+                        // that must NOT block the actual balance correction above,
+                        // which has already happened by this point.
+                        try {
+                            if ($adjType === 'income') postIncome($adjTxnId, $adjustDate, $note, $editId, $amt, $currency);
+                            else                       postExpense($adjTxnId, $adjustDate, $note, $editId, $amt, $currency);
+                        } catch (\Throwable $ledgerErr) {
+                            $error = 'Balance was adjusted successfully, but the double-entry ledger post failed: '
+                                   . $ledgerErr->getMessage()
+                                   . ' — if you haven\'t run migration_double_entry.sql yet, run that first.';
+                        }
+                    }
+                }
+            }
+
+            if (!$error) $msg = 'saved';
+        } catch (\Throwable $e) { $error = $e->getMessage(); }
     }
 }
 
@@ -180,8 +235,26 @@ select.fc option{background:var(--s2);}
             </select>
           </div>
           <div class="fg">
-            <label class="fl">Balance</label>
-            <input class="fc" type="number" step="0.001" name="balance" value="<?=htmlspecialchars($data['balance'])?>">
+            <label class="fl">Current Balance (read-only)</label>
+            <input class="fc" type="text" value="<?=money((float)$data['balance'], $data['currency'])?> <?=$data['currency']?>" disabled style="opacity:.65;">
+            <div class="hint">This only changes through real transactions — including the adjustment below.</div>
+          </div>
+        </div>
+
+        <div class="fg" style="border:1px solid var(--blue);border-radius:8px;padding:12px 14px;background:#4e9af111;">
+          <label class="fl" style="color:var(--blue);">🔧 Adjust Balance To (optional)</label>
+          <input class="fc" type="number" step="0.001" name="adjust_balance" placeholder="Leave blank to make no change">
+          <label class="fl" style="margin-top:10px;">Date of Adjustment</label>
+          <input class="fc" type="date" name="adjust_date" value="<?=date('Y-m-d')?>">
+          <div class="hint">
+            Use the date the correction actually applies to — e.g. when the original error happened —
+            not necessarily today. This becomes the transaction's date, so it lands in the right month
+            on reports and the account ledger.
+          </div>
+          <div class="hint">
+            If this differs from the current balance, the difference is recorded as a real transaction
+            (category "Adjustment") — not a silent overwrite. An increase is logged as income, a decrease
+            as an expense, so the ledger always stays reconcilable.
           </div>
         </div>
 
@@ -212,12 +285,12 @@ select.fc option{background:var(--s2);}
             <div class="r2">
               <div class="fg">
                 <label class="fl">Bill Date (day of month)</label>
-                <input class="fc" type="number" min="1" max="31" name="bill_date" value="<?=htmlspecialchars($data['bill_date'])?>">
+                <input class="fc" type="number" name="bill_date" value="<?=htmlspecialchars($data['bill_date'])?>" placeholder="1-31">
                 <div class="hint">Day bill is generated each month</div>
               </div>
               <div class="fg">
                 <label class="fl">Payment Due Date</label>
-                <input class="fc" type="number" min="1" max="31" name="payment_due_date" value="<?=htmlspecialchars($data['payment_due_date'])?>">
+                <input class="fc" type="number" name="payment_due_date" value="<?=htmlspecialchars($data['payment_due_date'])?>" placeholder="1-31">
               </div>
             </div>
             <div class="r2">

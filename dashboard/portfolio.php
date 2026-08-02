@@ -2,7 +2,7 @@
 require_once __DIR__ . '/db.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
-$pageTitle='Investment Portfolio'; $activePage='portfolio';
+$pageTitle='Investment Portfolio'; $activePage='portfolio'; $backTo='index.php';
 
 // Create table if not exists
 try {
@@ -50,6 +50,7 @@ if (isset($_POST['do_save'])) {
     $notes    = trim($_POST['notes']                    ?? '');
 
     if (!$symbol || !$name) { $error='Symbol and name required.'; }
+    elseif (!$accId) { $error='Every holding must be linked to an investment account.'; }
     else {
         if ($sid) {
             $exch = strtoupper($_POST['exchange'] ?? 'DSE');
@@ -141,7 +142,8 @@ require 'header.php';
   <a href="portfolio.php" class="btn btn-ghost btn-sm">← All Holdings</a>
   <span style="color:var(--blue);font-weight:600;">📊 <?=htmlspecialchars($filterBroker)?></span>
   <?php endif;?>
-  <button onclick="openPriceUpdate()" class="btn btn-primary btn-sm">🔄 Update Prices</button>
+  <a href="trade_stock.php" class="btn btn-primary btn-sm">📈 Trade Stock</a>
+  <button onclick="openPriceUpdate()" class="btn btn-ghost btn-sm">🔄 Update Prices</button>
   <a href="import_portfolio_pdf.php" class="btn btn-success btn-sm">📧 Import from PDF</a>
   <a href="portfolio_export.php?format=pdf<?=($filterBroker?'&broker='.urlencode($filterBroker):'')?>" target="_blank" class="btn btn-ghost btn-sm">🖨️ Report</a>
   <a href="portfolio_export.php?format=csv<?=($filterBroker?'&broker='.urlencode($filterBroker):'')?>" class="btn btn-ghost btn-sm">⬇️ CSV</a>
@@ -171,12 +173,12 @@ require 'header.php';
 
 <!-- Portfolio Summary -->
 <div class="g3" style="margin-bottom:20px;">
-  <div class="card"><div class="card-title">Total Cost</div><div class="card-value c-blue">BD <?=number_format($totalCostBHD,2)?></div></div>
-  <div class="card"><div class="card-title">Current Value</div><div class="card-value c-blue">BD <?=number_format($totalValueBHD,2)?></div></div>
+  <div class="card"><div class="card-title">Total Cost</div><div class="card-value c-blue">BD <?=money($totalCostBHD)?></div></div>
+  <div class="card"><div class="card-title">Current Value</div><div class="card-value c-blue">BD <?=money($totalValueBHD)?></div></div>
   <div class="card">
     <?php $totalPL=$totalValueBHD-$totalCostBHD; $totalPLPct=$totalCostBHD>0?round($totalPL/$totalCostBHD*100,2):0;?>
     <div class="card-title">Unrealized P&L</div>
-    <div class="card-value <?=$totalPL>=0?'c-green':'c-red'?>">BD <?=number_format($totalPL,2)?></div>
+    <div class="card-value <?=$totalPL>=0?'c-green':'c-red'?>">BD <?=money($totalPL)?></div>
     <div class="card-sub <?=$totalPL>=0?'c-green':'c-red'?>"><?=$totalPLPct>=0?'+':''?><?=$totalPLPct?>%</div>
   </div>
 </div>
@@ -265,11 +267,17 @@ require 'header.php';
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Linked Account (optional)</label>
-        <select class="form-control" name="account_id">
-          <option value="">— None —</option>
+        <label class="form-label">Linked Investment Account *</label>
+        <select class="form-control" name="account_id" required>
+          <option value="">— Select —</option>
           <?php foreach($accounts as $a):?><option value="<?=$a['id']?>" <?=($editItem['account_id']??0)==$a['id']?'selected':''?>><?=htmlspecialchars($a['name'])?></option><?php endforeach;?>
         </select>
+        <div class="hint">
+          Every holding must be linked so cost basis and cash stay tied together.
+          For an actual buy or sell, use <a href="trade_stock.php">Trade Stock</a> instead — it also
+          moves cash in/out of the linked account. This form only edits the holding record itself
+          (e.g. correcting a wrong quantity or average cost), it doesn't touch any account balance.
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Notes</label>
@@ -295,8 +303,8 @@ require 'header.php';
     <div style="background:var(--s2);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;">
       <span style="font-weight:700;"><?=$mktLabel?></span>
       <div style="text-align:right;">
-        <span style="font-size:.82rem;color:var(--muted);">BD <?=number_format($mktVal,2)?></span>
-        <span class="<?=$mktPL>=0?'c-green':'c-red'?>" style="margin-left:10px;font-size:.82rem;font-weight:700;"><?=$mktPL>=0?'+':''?><?=number_format($mktPL,2)?></span>
+        <span style="font-size:.82rem;color:var(--muted);">BD <?=money($mktVal)?></span>
+        <span class="<?=$mktPL>=0?'c-green':'c-red'?>" style="margin-left:10px;font-size:.82rem;font-weight:700;"><?=$mktPL>=0?'+':''?><?=money($mktPL)?></span>
       </div>
     </div>
     <table class="tbl" style="font-size:.82rem;">
@@ -311,7 +319,7 @@ require 'header.php';
             <div style="font-size:.72rem;color:var(--muted);"><?=htmlspecialchars($h['company_name'])?></div>
           </td>
           <td><?=number_format((float)$h['quantity'],2)?></td>
-          <td><?=number_format((float)$h['avg_cost'],2)?> <?=$h['currency']?></td>
+          <td><?=money((float)$h['avg_cost'], $h['currency'])?> <?=$h['currency']?></td>
           <td>
             <!-- Inline price update -->
             <form method="POST" action="portfolio.php" style="display:flex;gap:4px;align-items:center;">
@@ -323,11 +331,11 @@ require 'header.php';
             <div style="font-size:.68rem;color:var(--muted);">Updated: <?=date('d M',strtotime($h['last_updated']))?></div>
           </td>
           <td>
-            <div style="font-weight:600;"><?=number_format($h['value'],2)?> <?=$h['currency']?></div>
-            <div style="font-size:.72rem;color:var(--muted);">BD <?=number_format($h['valBHD'],2)?></div>
+            <div style="font-weight:600;"><?=money($h['value'], $h['currency'])?> <?=$h['currency']?></div>
+            <div style="font-size:.72rem;color:var(--muted);">BD <?=money($h['valBHD'])?></div>
           </td>
           <td class="<?=$plColor?>" style="font-weight:600;">
-            <?=$h['pl']>=0?'+':''?><?=number_format($h['pl'],2)?><br>
+            <?=$h['pl']>=0?'+':''?><?=money($h['pl'])?><br>
             <span style="font-size:.72rem;"><?=$h['plPct']>=0?'+':''?><?=$h['plPct']?>%</span>
           </td>
           <td>

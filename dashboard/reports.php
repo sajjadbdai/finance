@@ -2,7 +2,7 @@
 require_once __DIR__ . '/db.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
-$pageTitle='Reports'; $activePage='reports';
+$pageTitle='Reports'; $activePage='reports'; $backTo='index.php';
 
 $dateFrom  = $_GET['from']       ?? date('Y-m-01');
 $dateTo    = $_GET['to']         ?? date('Y-m-d');
@@ -70,6 +70,47 @@ require 'header.php';
 ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
+<!-- More Reports -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="section-title" style="margin-bottom:12px;">📑 More Reports</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+    <a href="report_financial_statements.php" class="report-link-card">
+      <div style="font-size:1.4rem;">📋</div>
+      <div style="font-weight:600;margin-top:6px;">Balance Sheet & Income Statement</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:2px;">Assets, Liabilities, Equity + period P&L</div>
+    </a>
+    <a href="report_cash_flow.php" class="report-link-card">
+      <div style="font-size:1.4rem;">💵</div>
+      <div style="font-weight:600;margin-top:6px;">Cash Flow Statement</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:2px;">Operating vs Investing vs Transfers</div>
+    </a>
+    <a href="report_networth_trend.php" class="report-link-card">
+      <div style="font-size:1.4rem;">📉</div>
+      <div style="font-weight:600;margin-top:6px;">Net Worth Trend</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:2px;">Chart of your monthly snapshots</div>
+    </a>
+    <a href="report_budget_vs_actual.php" class="report-link-card">
+      <div style="font-size:1.4rem;">🎯</div>
+      <div style="font-weight:600;margin-top:6px;">Budget vs Actual</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:2px;">Set limits, track spend by category</div>
+    </a>
+    <a href="report_portfolio_performance.php" class="report-link-card">
+      <div style="font-size:1.4rem;">🚀</div>
+      <div style="font-weight:600;margin-top:6px;">Portfolio Performance</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:2px;">XIRR per investment account</div>
+    </a>
+    <a href="balance_tools.php" class="report-link-card">
+      <div style="font-size:1.4rem;">⚖️</div>
+      <div style="font-weight:600;margin-top:6px;">Balance & Integrity Tools</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:2px;">Trial Balance, audits, reconciliation</div>
+    </a>
+  </div>
+</div>
+<style>
+.report-link-card{display:block;padding:14px;border:1px solid var(--s3);border-radius:10px;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s;background:var(--s2);}
+.report-link-card:hover{border-color:var(--blue);transform:translateY(-1px);}
+</style>
+
 <!-- Date Range Filter -->
 <div class="card" style="margin-bottom:20px;">
   <form method="GET">
@@ -98,9 +139,9 @@ require 'header.php';
 
 <!-- Summary -->
 <div class="g3">
-  <div class="card"><div class="card-title">Income</div><div class="card-value c-green">BD <?=number_format($stats['income'],2)?></div><div class="card-sub"><?=$cnts['income']?> transactions</div></div>
-  <div class="card"><div class="card-title">Expense</div><div class="card-value c-red">BD <?=number_format($stats['expense'],2)?></div><div class="card-sub"><?=$cnts['expense']?> transactions</div></div>
-  <div class="card"><?php $net=$stats['income']-$stats['expense'];?><div class="card-title">Net Saved</div><div class="card-value <?=$net>=0?'c-green':'c-red'?>">BD <?=number_format($net,2)?></div></div>
+  <div class="card"><div class="card-title">Income</div><div class="card-value c-green">BD <?=money($stats['income'])?></div><div class="card-sub"><?=$cnts['income']?> transactions</div></div>
+  <div class="card"><div class="card-title">Expense</div><div class="card-value c-red">BD <?=money($stats['expense'])?></div><div class="card-sub"><?=$cnts['expense']?> transactions</div></div>
+  <div class="card"><?php $net=$stats['income']-$stats['expense'];?><div class="card-title">Net Saved</div><div class="card-value <?=$net>=0?'c-green':'c-red'?>">BD <?=money($net)?></div></div>
 </div>
 
 <!-- PDF Export -->
@@ -126,7 +167,7 @@ require 'header.php';
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <div style="flex:1;font-size:.85rem;"><?=htmlspecialchars($c['category']?:'Other')?></div>
       <div style="width:80px;height:5px;background:var(--s3);border-radius:3px;overflow:hidden;"><div style="width:<?=$pct?>%;height:100%;background:var(--red);border-radius:3px;"></div></div>
-      <div style="font-size:.8rem;font-weight:600;width:70px;text-align:right;">BD <?=number_format($c['total'],2)?></div>
+      <div style="font-size:.8rem;font-weight:600;width:70px;text-align:right;">BD <?=money($c['total'])?></div>
       <div style="font-size:.75rem;color:var(--muted);width:28px;"><?=$pct?>%</div>
     </div>
     <?php endforeach; ?>
@@ -150,7 +191,7 @@ require 'header.php';
       <tr>
         <td><?=htmlspecialchars($a['name']??'')?></td>
         <td><?=(int)($a['cnt']??0)?></td>
-        <td class="<?=$netColor?>" style="font-weight:600;">BD <?=number_format($netVal,3)?></td>
+        <td class="<?=$netColor?>" style="font-weight:600;">BD <?=money($netVal)?></td>
         <td><?php if($accIdForLink):?><a href="report_pdf.php?report=account&from=<?=urlencode($dateFrom)?>&to=<?=urlencode($dateTo)?>&account_id=<?=$accIdForLink?>" target="_blank" class="btn btn-ghost btn-sm">PDF</a><?php endif;?></td>
       </tr>
       <?php endforeach;?>

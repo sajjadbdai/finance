@@ -1,16 +1,24 @@
 <?php
-// This handles inline button presses (confirm/cancel transaction)
-// Add this at the TOP of webhook.php before the message check:
-//
-//   $callbackQuery = $update['callback_query'] ?? null;
-//   if ($callbackQuery) { handleCallback($callbackQuery); exit; }
+/**
+ * DEPRECATED — DO NOT USE.
+ *
+ * This file is an older standalone version of handleCallback that is
+ * superseded by the inline handleCallback() in webhook.php.
+ *
+ * KEEPING this file for reference only.
+ * Loading it alongside webhook.php or oldwebhook.php will cause:
+ *   PHP Fatal error: Cannot redeclare handleCallback()
+ *
+ * The current webhook.php has this function built-in.
+ */
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../api/db.php';
 require_once __DIR__ . '/../api/parser.php';
 require_once __DIR__ . '/telegram.php';
 
-function handleCallback(array $cb): void {
+/** @deprecated Use handleCallback() in webhook.php */
+function handleCallback_deprecated(array $cb): void {
     $chatId   = $cb['message']['chat']['id'];
     $msgId    = $cb['message']['message_id'];
     $data     = $cb['data'];
@@ -43,11 +51,11 @@ function handleCallback(array $cb): void {
         if ($txnId) {
             // Get updated balance
             $acc = getAccountByName($ctx['parsed']['account'] ?? '');
-            $bal = $acc ? number_format((float)$acc['balance'], 3) : '—';
+            $bal = $acc ? money((float)$acc['balance'], $acc['currency']) : '—';
             $cur = $acc['currency'] ?? '';
 
             $type   = strtoupper($ctx['parsed']['type'] ?? '');
-            $amount = number_format((float)($ctx['parsed']['amount'] ?? 0), 3);
+            $amount = money((float)($ctx['parsed']['amount'] ?? 0), ($ctx['parsed']['currency'] ?? 'BHD'));
             $currency = $ctx['parsed']['currency'] ?? '';
 
             tgSend($chatId,

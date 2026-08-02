@@ -2,7 +2,7 @@
 require_once __DIR__ . '/db.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
-$pageTitle='Bank Reconciliation'; $activePage='bank_reconciliation';
+$pageTitle='Bank Reconciliation'; $activePage='bank_reconciliation'; $backTo='balance_tools.php';
 
 // Get all accounts that have statements
 $accts = db()->query("
@@ -27,9 +27,7 @@ $totalAccts    = count($byAccount);
 $matchedAccts  = 0;
 $diffAccts     = 0;
 foreach ($byAccount as $r) {
-    $appBal  = toBase((float)$r['app_balance'], $r['currency']);
-    $stmtBal = toBase((float)$r['stmt_balance'], $r['stmt_currency']);
-    $diff = abs($appBal - $stmtBal);
+    $diff = abs((float)$r['app_balance'] - (float)$r['stmt_balance']);
     if ($diff < 0.01) $matchedAccts++; else $diffAccts++;
 }
 
@@ -95,13 +93,13 @@ require 'header.php'; ?>
                 <br><small class="c-muted">to <?=$r['period_to']?date('d M Y',strtotime($r['period_to'])):'—'?></small>
             </td>
             <td data-hide="true" style="text-align:right;font-weight:600;">
-                <?=number_format($appBal,3)?> <?=$r['currency']?>
+                <?=money($appBal, $r['currency'])?> <?=$r['currency']?>
             </td>
             <td data-hide="true" style="text-align:right;font-weight:600;">
-                <?=number_format($stmtBal,3)?> <?=$r['stmt_currency']?>
+                <?=money($stmtBal)?> <?=$r['stmt_currency']?>
             </td>
             <td data-hide="true" style="text-align:right;font-weight:700;color:<?=$matched?'var(--green)':($diff>0?'var(--blue)':'var(--red)')?>">
-                <?=$matched?'0.000':($diff>0?'+':'').number_format($diff,3)?>
+                <?=$matched?'0.000':($diff>0?'+':'').money($diff)?>
                 <?=$r['currency']?>
             </td>
             <td>

@@ -53,7 +53,7 @@ $ccDue = db()->query("SELECT name,balance FROM accounts WHERE is_credit_card=1 A
 $ccTotal=0; $ccLines=[];
 foreach($ccDue as $cc){
     $amt=abs((float)$cc['balance']); $ccTotal+=$amt;
-    $ccLines[]="  • {$cc['name']}: BD ".number_format($amt,2);
+    $ccLines[]="  • {$cc['name']}: BD ".money($amt);
 }
 
 // ── Upcoming scheduled payments ───────────────────────────
@@ -70,21 +70,21 @@ $msg .= date('d M Y')."\n";
 $msg .= str_repeat("─",28)."\n\n";
 
 $msg .= "💎 *Total Wealth*\n";
-$msg .= "BD ".number_format($netWorth,2)."\n";
-$msg .= "  🏦 Bank & Cash: BD ".number_format($totalAssets,2)."\n";
-$msg .= "  📈 Portfolio:   BD ".number_format($portBHD,2)."\n";
-if($fixedBHD>0) $msg .= "  🏠 Fixed Assets: BD ".number_format($fixedBHD,2)."\n";
-if($totalLiab<0) $msg .= "  💳 Liabilities: BD ".number_format(abs($totalLiab),2)."\n";
+$msg .= "BD ".money($netWorth)."\n";
+$msg .= "  🏦 Bank & Cash: BD ".money($totalAssets)."\n";
+$msg .= "  📈 Portfolio:   BD ".money($portBHD)."\n";
+if($fixedBHD>0) $msg .= "  🏠 Fixed Assets: BD ".money($fixedBHD)."\n";
+if($totalLiab<0) $msg .= "  💳 Liabilities: BD ".money(abs($totalLiab))."\n";
 
 $msg .= "\n📅 *This Week*\n";
-$msg .= "  ✅ Income:  BD ".number_format($weekIncome,2)."\n";
-$msg .= "  ❌ Expense: BD ".number_format($weekExpense,2)."\n";
-$msg .= "  💰 Net:     BD ".number_format($weekIncome-$weekExpense,2)."\n";
+$msg .= "  ✅ Income:  BD ".money($weekIncome)."\n";
+$msg .= "  ❌ Expense: BD ".money($weekExpense)."\n";
+$msg .= "  💰 Net:     BD ".money($weekIncome-$weekExpense)."\n";
 
 if($ccLines){
     $msg .= "\n💳 *CC Outstanding*\n";
     $msg .= implode("\n",$ccLines)."\n";
-    $msg .= "  Total: BD ".number_format($ccTotal,2)."\n";
+    $msg .= "  Total: BD ".money($ccTotal)."\n";
 }
 
 if($upcoming){

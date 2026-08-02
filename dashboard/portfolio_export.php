@@ -56,17 +56,17 @@ if ($format === 'csv') {
         fputcsv($out,[
             $r['symbol'],$r['company_name'],$r['market'],
             $r['quantity'],$r['avg_cost'],$r['currency'],$r['current_price'],
-            number_format($r['cost'],2),number_format($r['value'],2),
-            number_format($r['pl'],2),$r['plPct'].'%',
-            number_format($r['costBHD'],3),number_format($r['valBHD'],3),
+            money($r['cost']),money($r['value']),
+            money($r['pl']),$r['plPct'].'%',
+            money($r['costBHD']),money($r['valBHD']),
             $r['acc_name']??'',date('d M Y',strtotime($r['last_updated']))
         ]);
     }
     fputcsv($out,[]);
     fputcsv($out,['TOTAL','','','','','','','','','','',
-        number_format($totalCost,3),number_format($totalValue,3),'','']);
+        money($totalCost),money($totalValue),'','']);
     fputcsv($out,['Total P&L (BHD)','','','','','','','','',
-        number_format($totalPL,3),$totalPLPct.'%','','','','']);
+        money($totalPL),$totalPLPct.'%','','','','']);
     fclose($out); exit;
 }
 
@@ -106,10 +106,10 @@ tr:nth-child(even) td{background:#f9f9f9;}
 <div class="meta">Generated: <?=date('d M Y H:i')?> &nbsp;|&nbsp; Total Holdings: <?=count($rows)?></div>
 
 <div class="summary">
-  <div class="sbox"><div class="slabel">Total Cost</div><div class="sval blue">BD <?=number_format($totalCost,3)?></div></div>
-  <div class="sbox"><div class="slabel">Current Value</div><div class="sval blue">BD <?=number_format($totalValue,3)?></div></div>
+  <div class="sbox"><div class="slabel">Total Cost</div><div class="sval blue">BD <?=money($totalCost)?></div></div>
+  <div class="sbox"><div class="slabel">Current Value</div><div class="sval blue">BD <?=money($totalValue)?></div></div>
   <div class="sbox"><div class="slabel">Unrealized P&L</div>
-    <div class="sval <?=$totalPL>=0?'green':'red'?>">BD <?=number_format($totalPL,3)?><br>
+    <div class="sval <?=$totalPL>=0?'green':'red'?>">BD <?=money($totalPL)?><br>
     <span style="font-size:11px;"><?=$totalPLPct>=0?'+':''?><?=$totalPLPct?>%</span></div>
   </div>
 </div>
@@ -120,7 +120,7 @@ tr:nth-child(even) td{background:#f9f9f9;}
   $mktVal=array_sum(array_column($items,'valBHD'));
   $mktPL=$mktVal-$mktCost;
 ?>
-<div class="mkt-header"><?=$mktLabel?> &nbsp;|&nbsp; Value: BD <?=number_format($mktVal,2)?> &nbsp;|&nbsp; P&L: <span style="color:<?=$mktPL>=0?'#2ecc71':'#e74c3c'?>"><?=$mktPL>=0?'+':''?><?=number_format($mktPL,2)?></span></div>
+<div class="mkt-header"><?=$mktLabel?> &nbsp;|&nbsp; Value: BD <?=money($mktVal)?> &nbsp;|&nbsp; P&L: <span style="color:<?=$mktPL>=0?'#2ecc71':'#e74c3c'?>"><?=$mktPL>=0?'+':''?><?=money($mktPL)?></span></div>
 <table>
   <thead><tr>
     <th>Symbol</th><th>Company</th><th>Qty</th><th>Avg Cost</th><th>Curr Price</th><th>Currency</th>
@@ -135,20 +135,20 @@ tr:nth-child(even) td{background:#f9f9f9;}
     <td><?=number_format((float)$r['avg_cost'],4)?></td>
     <td><?=number_format((float)$r['current_price'],4)?></td>
     <td><?=$r['currency']?></td>
-    <td><?=number_format($r['cost'],2)?></td>
-    <td><?=number_format($r['value'],2)?></td>
-    <td class="<?=$plc?>"><?=$r['pl']>=0?'+':''?><?=number_format($r['pl'],2)?></td>
+    <td><?=money($r['cost'])?></td>
+    <td><?=money($r['value'])?></td>
+    <td class="<?=$plc?>"><?=$r['pl']>=0?'+':''?><?=money($r['pl'])?></td>
     <td class="<?=$plc?>"><?=$r['plPct']>=0?'+':''?><?=$r['plPct']?>%</td>
-    <td>BD <?=number_format($r['valBHD'],3)?></td>
+    <td>BD <?=money($r['valBHD'])?></td>
   </tr>
   <?php endforeach;?>
   <tr class="total-row">
     <td colspan="6">Market Total</td>
-    <td>BD <?=number_format($mktCost,2)?></td>
-    <td>BD <?=number_format($mktVal,2)?></td>
-    <td class="<?=$mktPL>=0?'green':'red'?>"><?=$mktPL>=0?'+':''?><?=number_format($mktPL,2)?></td>
+    <td>BD <?=money($mktCost)?></td>
+    <td>BD <?=money($mktVal)?></td>
+    <td class="<?=$mktPL>=0?'green':'red'?>"><?=$mktPL>=0?'+':''?><?=money($mktPL)?></td>
     <td class="<?=$mktPL>=0?'green':'red'?>"><?=$totalCost>0?round($mktPL/$totalCost*100,1):0?>%</td>
-    <td>BD <?=number_format($mktVal,3)?></td>
+    <td>BD <?=money($mktVal)?></td>
   </tr>
   </tbody>
 </table>

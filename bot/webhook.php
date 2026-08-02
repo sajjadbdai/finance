@@ -1,4 +1,26 @@
 <?php
+// ============================================================
+// Handle browser verification FIRST — lightweight, no deps
+// ============================================================
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html><html><head><title>Bot Status</title>';
+    echo '<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5}.card{background:#fff;border-radius:12px;padding:40px 60px;box-shadow:0 2px 20px rgba(0,0,0,.08);text-align:center}.check{color:#22c55e;font-size:64px;margin-bottom:10px}h1{color:#333;margin:0 0 8px}p{color:#666;margin:0 0 4px;font-size:14px}.badge{display:inline-block;background:#22c55e;color:#fff;padding:4px 16px;border-radius:20px;font-size:13px;margin-top:16px}</style></head>';
+    echo '<body><div class="card"><div class="check">✅</div>';
+    echo '<h1>Bot Webhook Active</h1>';
+    echo '<p>Server: ' . gethostname() . '</p>';
+    echo '<p>Time: ' . date('Y-m-d H:i:s') . ' ' . date('T') . '</p>';
+    echo '<p>PHP: ' . PHP_VERSION . '</p>';
+    echo '<div class="badge">✓ Accepting Telegram updates</div>';
+    echo '</div></body></html>';
+    exit;
+}
+
+// ============================================================
+// Only POST requests from Telegram are allowed beyond this point
+// ============================================================
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(403); exit; }
+
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../api/db.php';
 require_once __DIR__ . '/../api/parser.php';
@@ -11,7 +33,28 @@ file_put_contents(__DIR__ . '/../webhook_debug.log',
     FILE_APPEND
 );
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(403); exit; }
+// Respond to Telegram IMMEDIATELY to prevent timeout
+ignore_user_abort(true);
+set_time_limit(120);
+
+// Safely manage output buffering
+if (ob_get_level() === 0) {
+    ob_start();
+}
+echo '{"ok":true}';
+$size = ob_get_length();
+if (!headers_sent()) {
+    header('Content-Type: application/json');
+    if ($size) header('Content-Length: ' . $size);
+    header('Connection: close');
+}
+// Flush safely — close output buffers without warnings
+while (ob_get_level() > 0) {
+    ob_end_flush();
+}
+flush();
+if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+if (function_exists('litespeed_finish_request')) litespeed_finish_request();
 
 $update = json_decode($input, true);
 if (!$update) exit;
@@ -108,7 +151,7 @@ function txnEmoji(string $type): string {
 
 function txnLine(array $t): string {
     $emoji  = txnEmoji($t['type'] ?? '');
-    $amt    = number_format((float)($t['amount'] ?? 0), 3);
+    $amt    = money((float)($t['amount'] ?? 0), ($t['currency'] ?? 'BHD'));
     $cur    = $t['currency'] ?? '';
     $acc    = $t['account'] ?? '';
     $toAcc  = $t['to_account'] ?? null;
@@ -284,6 +327,13 @@ function handleCallback(array $cb): void {
     $data       = $cb['data'];
     $callbackId = $cb['id'];
 
+    // --- Authorization check ---
+    $callbackUserId = (int)($cb['from']['id'] ?? 0);
+    if (!isAuthorized($callbackUserId)) {
+        // Silently ignore unauthorized callbacks
+        exit;
+    }
+
     // Acknowledge button press
     $ch = curl_init(TELEGRAM_API . '/answerCallbackQuery');
     curl_setopt_array($ch, [
@@ -311,6 +361,14 @@ function handleCallback(array $cb): void {
         if (!$row) { tgSend($chatId, "⏰ Session expired. Please resend all transactions."); return; }
 
         $allCtx = json_decode($row['context'], true);
+
+        if (!$allCtx || !isset($allCtx['transactions'])) {
+            tgSend($chatId, "⏰ Session data corrupted. Please re-send all transactions.");
+            db()->prepare("UPDATE bot_sessions SET state='idle',context='' WHERE telegram_id=?")
+               ->execute([$chatId]);
+            return;
+        }
+
         $ctx2   = $allCtx['transactions'][$idx] ?? null;
 
         if (!$ctx2) { tgSend($chatId, "⏰ Transaction not found."); return; }
@@ -333,9 +391,9 @@ function handleCallback(array $cb): void {
                 $cur = $acc['currency'] ?? '';
                 if ($acc && $acc['is_credit_card']) {
                     $ccBal = getCCBalancesBot($acc);
-                    $bal   = '-' . number_format($ccBal['total'], 3);
+                    $bal   = '-' . money($ccBal['total'], $cur);
                 } else {
-                    $bal = $acc ? number_format((float)$acc['balance'], 3) : '—';
+                    $bal = $acc ? money((float)$acc['balance'], $cur) : '—';
                 }
                 $remaining = count($allCtx['transactions']) - count($processed);
                 tgSend($chatId, "✅ Saved! #{$txnId}
@@ -378,6 +436,22 @@ function handleCallback(array $cb): void {
 
     $ctx = json_decode($session['context'], true);
 
+    // Defensive: context must be an array with 'parsed' and 'mode' keys
+    if (!is_array($ctx) || !isset($ctx['parsed']) || !isset($ctx['mode'])) {
+        tgSend($chatId, "⏰ Session data corrupted. Please re-send your transaction.");
+        db()->prepare("UPDATE bot_sessions SET state='idle', context='' WHERE telegram_id=?")
+           ->execute([$chatId]);
+        return;
+    }
+
+    // Also guard against null/invalid parsed data
+    if (!is_array($ctx['parsed']) || empty($ctx['parsed'])) {
+        tgSend($chatId, "⏰ Session data corrupted (empty transaction). Please re-send.");
+        db()->prepare("UPDATE bot_sessions SET state='idle', context='' WHERE telegram_id=?")
+           ->execute([$chatId]);
+        return;
+    }
+
     // Clear session IMMEDIATELY to prevent duplicate saves on re-tap
     db()->prepare("UPDATE bot_sessions SET state='idle', context='' WHERE telegram_id=?")
        ->execute([$chatId]);
@@ -389,11 +463,11 @@ function handleCallback(array $cb): void {
             $cur = $acc['currency'] ?? '';
             if ($acc && $acc['is_credit_card']) {
                 $ccBal = getCCBalancesBot($acc);
-                $bal   = '-' . number_format($ccBal['total'], 3);
+                $bal   = '-' . money($ccBal['total'], $cur);
                 $balExtra = "
-📊 Payable: ".number_format($ccBal['payable'],3)." | Outst: ".number_format($ccBal['outstanding'],3)." {$cur}";
+📊 Payable: ".money($ccBal['payable'], $cur)." | Outst: ".money($ccBal['outstanding'], $cur)." {$cur}";
             } else {
-                $bal      = $acc ? number_format((float)$acc['balance'], 3) : '—';
+                $bal      = $acc ? money((float)$acc['balance'], $cur) : '—';
                 $balExtra = '';
             }
             tgSend($chatId,
@@ -494,15 +568,15 @@ function sendBalanceSummary(int $chatId, string $search = ''): void {
         foreach ($accounts as $a) {
             if ($a['is_cc']) {
                 $ccB = getCCBalancesBot($a);
-                $bal = '-' . number_format($ccB['total'], 3);
+                $bal = '-' . money($ccB['total'], $a['currency']);
                 $color = '🔴';
-                $extra = "\n    P: " . number_format($ccB['payable'],3) . " | O: " . number_format($ccB['outstanding'],3);
+                $extra = "\n    P: " . money($ccB['payable'], $a['currency']) . " | O: " . money($ccB['outstanding'], $a['currency']);
             } else {
-                $bal   = number_format((float)$a['balance'], 3);
+                $bal   = money((float)$a['balance'], $a['currency']);
                 $color = (float)$a['balance'] < 0 ? '🔴' : '🔵';
                 $extra = '';
             }
-            $bhd = $a['currency'] !== 'BHD' ? ' (≈BD ' . number_format(toBHD(abs((float)$a['balance']), $a['currency']),3) . ')' : '';
+            $bhd = $a['currency'] !== 'BHD' ? ' (≈BD ' . money(toBHD(abs((float)$a['balance']), $a['currency'])) . ')' : '';
             $msg .= "{$color} <b>{$a['name']}</b>\n    {$bal} {$a['currency']}{$bhd}{$extra}\n\n";
         }
         tgSend($chatId, $msg);
@@ -530,17 +604,17 @@ function sendBalanceSummary(int $chatId, string $search = ''): void {
         foreach ($accs as $a) {
             if ($a['is_cc']) {
                 $ccB  = getCCBalancesBot($a);
-                $bal  = '-' . number_format($ccB['total'], 2);
+                $bal  = '-' . money($ccB['total'], $a['currency']);
                 $color= '🔴';
             } else {
-                $bal  = number_format((float)$a['balance'], 2);
+                $bal  = money((float)$a['balance'], $a['currency']);
                 $color= (float)$a['balance'] < 0 ? '🔴' : '🔵';
             }
             $msg .= "  {$color} {$a['name']}: {$bal} {$a['currency']}\n";
         }
         $msg .= "\n";
     }
-    $net = number_format($totalAssets + $totalLiab, 3);
+    $net = money($totalAssets + $totalLiab);
     $msg .= "━━━━━━━━━━\n💎 <b>Net Worth: BD {$net}</b>\n";
     $msg .= "\n💡 Tip: /balance BBK to check specific account";
     tgSend($chatId, $msg);
@@ -562,13 +636,13 @@ function sendTodaySummary(int $chatId): void {
     $msg = "📅 <b>Today — " . date('d M Y') . "</b>\n\n";
     foreach ($rows as $r) {
         $emoji = $r['type']==='income'?'🟢':($r['type']==='expense'?'🔴':'🔵');
-        $amt   = number_format((float)$r['amount'], 2);
+        $amt   = money((float)$r['amount'], $r['currency']);
         $msg  .= "{$emoji} {$amt} {$r['currency']} {$r['category']} ({$r['acc_name']})\n";
         if ($r['type']==='expense') $exp += toBHD((float)$r['amount'], $r['currency']);
         if ($r['type']==='income')  $inc += toBHD((float)$r['amount'], $r['currency']);
     }
-    $msg .= "\n🔴 Spent: BD " . number_format($exp,3);
-    $msg .= "\n🟢 Earned: BD " . number_format($inc,3);
+    $msg .= "\n🔴 Spent: BD " . money($exp);
+    $msg .= "\n🟢 Earned: BD " . money($inc);
     tgSend($chatId, $msg);
 }
 
@@ -588,14 +662,14 @@ function sendMonthlySummary(int $chatId): void {
     }
 
     $msg  = "📊 <b>" . date('F Y') . " Summary</b>\n\n";
-    $msg .= "🟢 Income:  BD " . number_format($inc, 3) . "\n";
-    $msg .= "🔴 Expense: BD " . number_format($exp, 3) . "\n";
-    $msg .= "💰 Saved:   BD " . number_format($inc-$exp, 3) . "\n\n";
+    $msg .= "🟢 Income:  BD " . money($inc) . "\n";
+    $msg .= "🔴 Expense: BD " . money($exp) . "\n";
+    $msg .= "💰 Saved:   BD " . money($inc-$exp) . "\n\n";
     if ($cats) {
         $msg .= "<b>By Category:</b>\n";
         foreach (array_slice($cats,0,8) as $c) {
             $pct = $exp>0 ? round($c['total']/$exp*100) : 0;
-            $msg .= "  • {$c['category']}: BD " . number_format($c['total'],3) . " ({$pct}%)\n";
+            $msg .= "  • {$c['category']}: BD " . money($c['total']) . " ({$pct}%)\n";
         }
     }
     tgSend($chatId, $msg);
@@ -605,7 +679,7 @@ function sendAccountsList(int $chatId): void {
     $rows = db()->query("SELECT name, balance, currency FROM accounts WHERE is_active=1 ORDER BY name")->fetchAll();
     $msg  = "🏦 <b>All Accounts</b>\n\n";
     foreach ($rows as $a) {
-        $bal  = number_format((float)$a['balance'], 2);
+        $bal  = money((float)$a['balance'], $a['currency']);
         $color = $a['balance'] < 0 ? '🔴' : '🔵';
         $msg .= "{$color} <b>{$a['name']}</b>: {$bal} {$a['currency']}\n";
     }
@@ -633,8 +707,8 @@ function sendWeeklyReport(int $chatId): void {
         if ($r['type']==='expense') $exp = (float)$r['total'];
     }
     $msg  = "📈 <b>Last 7 Days</b>\n\n";
-    $msg .= "🟢 Income:  BD " . number_format($inc,3) . "\n";
-    $msg .= "🔴 Expense: BD " . number_format($exp,3) . "\n";
-    $msg .= "💰 Net:     BD " . number_format($inc-$exp,3);
+    $msg .= "🟢 Income:  BD " . money($inc) . "\n";
+    $msg .= "🔴 Expense: BD " . money($exp) . "\n";
+    $msg .= "💰 Net:     BD " . money($inc-$exp);
     tgSend($chatId, $msg);
 }

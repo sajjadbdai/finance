@@ -3,7 +3,7 @@
 require_once __DIR__ . '/db.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
-$pageTitle='Accounts'; $activePage='accounts';
+$pageTitle='Accounts'; $activePage='accounts'; $backTo='index.php';
 
 if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     db()->prepare("UPDATE accounts SET is_active=0 WHERE id=?")->execute([(int)$_GET['delete']]);
@@ -53,9 +53,9 @@ require 'header.php';
 
 <!-- Summary -->
 <div class="g3" style="margin-bottom:24px;">
-  <div class="card"><div class="card-title">Total Assets</div><div class="card-value c-blue">BD <?=number_format($totalAssets,2)?></div></div>
-  <div class="card"><div class="card-title">Total Liabilities</div><div class="card-value c-red">BD <?=number_format($totalLiab,2)?></div></div>
-  <div class="card"><div class="card-title">Net Worth</div><div class="card-value c-green">BD <?=number_format($totalAssets+$totalLiab,2)?></div></div>
+  <div class="card"><div class="card-title">Total Assets</div><div class="card-value c-blue">BD <?=money($totalAssets)?></div></div>
+  <div class="card"><div class="card-title">Total Liabilities</div><div class="card-value c-red">BD <?=money($totalLiab)?></div></div>
+  <div class="card"><div class="card-title">Net Worth</div><div class="card-value c-green">BD <?=money($totalAssets+$totalLiab)?></div></div>
 </div>
 
 <div class="section-header">
@@ -78,7 +78,7 @@ require 'header.php';
       <?= htmlspecialchars($gname) ?>
     </span>
     <span class="<?=$gcolor?>" style="font-size:.9rem;font-weight:700;">
-      BD <?=number_format($gtotalBHD,3)?>
+      BD <?=money($gtotalBHD)?>
     </span>
   </div>
 
@@ -108,15 +108,15 @@ require 'header.php';
         </div>
       <?php endif; ?>
     </div>
-    <div style="text-align:right;font-weight:600;" class="<?=$total>0?'c-red':'c-muted'?>">
-      -<?=$a['currency']?> <?=number_format($total,2)?>
+    <div style="text-align:right;font-weight:600;" class="<?=$payable>0?'c-red':'c-muted'?>">
+      -<?=$a['currency']?> <?=money($payable, $a['currency'])?>
     </div>
     <div style="text-align:right;font-weight:600;" class="<?=$outstanding>0?'c-orange':'c-muted'?>">
-      <?=$a['currency']?> <?=number_format($outstanding,2)?>
+      <?=$a['currency']?> <?=money($outstanding, $a['currency'])?>
     </div>
     <div style="text-align:right;font-size:.82rem;color:var(--muted);">
       <?=$a['currency']?> <?=number_format($limit,0)?><br>
-      <span style="font-size:.7rem;">Avail: <?=number_format($available,2)?></span>
+      <span style="font-size:.7rem;">Avail: <?=money($available)?></span>
     </div>
     <div class="gap-2">
       <a href="account_detail.php?id=<?=$a['id']?>" class="btn btn-ghost btn-sm">View</a>
@@ -144,12 +144,12 @@ require 'header.php';
     <div style="flex:1;">
       <a href="account_detail.php?id=<?=$a['id']?>" style="font-size:.9rem;font-weight:500;"><?=htmlspecialchars($a['name'])?></a>
       <?php if ($a['currency']!=='BHD'): ?>
-        <span style="font-size:.72rem;color:var(--muted);margin-left:6px;">≈ BD <?=number_format(toBHD((float)$a['balance'],$a['currency']),2)?></span>
+        <span style="font-size:.72rem;color:var(--muted);margin-left:6px;">≈ BD <?=money(toBHD((float)$a['balance'],$a['currency']))?></span>
       <?php endif; ?>
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
       <span style="font-size:.92rem;font-weight:700;" class="<?=(float)$a['balance']<0?'c-red':'c-blue'?>">
-        <?=number_format((float)$a['balance'],2)?> <?=$a['currency']?>
+        <?=money((float)$a['balance'], $a['currency'])?> <?=$a['currency']?>
       </span>
       <div class="gap-2">
         <a href="account_detail.php?id=<?=$a['id']?>" class="btn btn-ghost btn-sm">View</a>

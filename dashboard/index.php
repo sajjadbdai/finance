@@ -107,7 +107,7 @@ try {
 // ── Wealth: Fixed Assets ──────────────────────────────────
 $fixedAssetsBHD=0; $fixedByCategory=[];
 try {
-    $fas = db()->query("SELECT category, currency, SUM(current_value) as val FROM fixed_assets WHERE current_value>0 GROUP BY category, currency")->fetchAll();
+    $fas = db()->query("SELECT category, currency, SUM(current_value) as val FROM fixed_assets WHERE current_value>0 AND status='owned' GROUP BY category, currency")->fetchAll();
     foreach($fas as $f){
         $bhd = toBHD((float)$f['val'], $f['currency']);
         $fixedAssetsBHD += $bhd;
@@ -135,29 +135,29 @@ require 'header.php';
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
       <div>
         <div class="card-title">💎 Total Wealth</div>
-        <div data-hide="true" style="font-size:1.8rem;font-weight:800;color:var(--blue);">BD <?=number_format($totalWealthBHD,2)?></div>
+        <div data-hide="true" style="font-size:1.8rem;font-weight:800;color:var(--blue);">BD <?=money($totalWealthBHD)?></div>
         <div class="card-sub"><?=date('d M Y')?></div>
       </div>
       <div style="display:flex;gap:20px;flex-wrap:wrap;">
         <div style="text-align:right;">
           <div class="card-title">Bank & Cash</div>
-          <div data-hide="true" style="font-weight:700;color:var(--blue);">BD <?=number_format($totalAssets,2)?></div>
+          <div data-hide="true" style="font-weight:700;color:var(--blue);">BD <?=money($totalAssets)?></div>
         </div>
         <?php if($portfolioBHD>0):?>
         <div style="text-align:right;">
           <div class="card-title">Portfolio</div>
-          <div data-hide="true" style="font-weight:700;color:var(--green);">BD <?=number_format($portfolioBHD,2)?></div>
+          <div data-hide="true" style="font-weight:700;color:var(--green);">BD <?=money($portfolioBHD)?></div>
         </div>
         <?php endif;?>
         <?php if($fixedAssetsBHD>0):?>
         <div style="text-align:right;">
           <div class="card-title">Fixed Assets</div>
-          <div data-hide="true" style="font-weight:700;color:var(--green);">BD <?=number_format($fixedAssetsBHD,2)?></div>
+          <div data-hide="true" style="font-weight:700;color:var(--green);">BD <?=money($fixedAssetsBHD)?></div>
         </div>
         <?php endif;?>
         <div style="text-align:right;">
           <div class="card-title">Liabilities</div>
-          <div data-hide="true" style="font-weight:700;color:var(--red);">-BD <?=number_format(abs($totalLiab),2)?></div>
+          <div data-hide="true" style="font-weight:700;color:var(--red);">-BD <?=money(abs($totalLiab))?></div>
         </div>
       </div>
     </div>
@@ -182,11 +182,11 @@ require 'header.php';
       <span style="font-size:.85rem;"><?=$icon?> <?=htmlspecialchars($exch)?>
         <small style="color:var(--muted);margin-left:4px;"><?=$stocks?> stocks</small>
       </span>
-      <span data-hide="true" class="c-blue" style="font-weight:600;font-size:.85rem;">BD <?=number_format($bhd,2)?></span>
+      <span data-hide="true" class="c-blue" style="font-weight:600;font-size:.85rem;">BD <?=money($bhd)?></span>
     </a>
     <?php endforeach;?>
     <a href="portfolio.php" style="display:flex;justify-content:space-between;padding:7px 0;font-weight:700;text-decoration:none;color:inherit;">
-      <span>Total</span><span class="c-blue">BD <?=number_format($portfolioBHD,2)?></span>
+      <span>Total</span><span class="c-blue">BD <?=money($portfolioBHD)?></span>
     </a>
   </div>
   <?php endif;?>
@@ -199,30 +199,30 @@ require 'header.php';
     <a href="fixed_assets.php?cat=<?=urlencode($cat)?>"
        style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--s3);text-decoration:none;color:inherit;">
       <span style="font-size:.85rem;"><?=$icons[$cat]??'📦'?> <?=htmlspecialchars($cat)?></span>
-      <span data-hide="true" class="c-blue" style="font-weight:600;font-size:.85rem;">BD <?=number_format($val,2)?></span>
+      <span data-hide="true" class="c-blue" style="font-weight:600;font-size:.85rem;">BD <?=money($val)?></span>
     </a>
     <?php endforeach;?>
     <a href="fixed_assets.php" style="display:flex;justify-content:space-between;padding:7px 0;font-weight:700;text-decoration:none;color:inherit;">
-      <span>Total</span><span class="c-blue">BD <?=number_format($fixedAssetsBHD,2)?></span>
+      <span>Total</span><span class="c-blue">BD <?=money($fixedAssetsBHD)?></span>
     </a>
   </div>
   <?php endif;?>
   <div class="card">
     <div class="card-title">⚖️ Net Position</div>
     <a href="accounts.php" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--s3);font-size:.85rem;text-decoration:none;color:inherit;">
-      <span>🏦 Bank & Cash</span><span data-hide="true" class="c-blue" style="font-weight:600;">BD <?=number_format($totalAssets,2)?></span>
+      <span>🏦 Bank & Cash</span><span data-hide="true" class="c-blue" style="font-weight:600;">BD <?=money($totalAssets)?></span>
     </a>
     <a href="portfolio.php" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--s3);font-size:.85rem;text-decoration:none;color:inherit;">
-      <span>📈 Portfolio</span><span data-hide="true" class="c-blue" style="font-weight:600;">BD <?=number_format($portfolioBHD,2)?></span>
+      <span>📈 Portfolio</span><span data-hide="true" class="c-blue" style="font-weight:600;">BD <?=money($portfolioBHD)?></span>
     </a>
     <a href="fixed_assets.php" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--s3);font-size:.85rem;text-decoration:none;color:inherit;">
-      <span>🏠 Fixed Assets</span><span data-hide="true" class="c-blue" style="font-weight:600;">BD <?=number_format($fixedAssetsBHD,2)?></span>
+      <span>🏠 Fixed Assets</span><span data-hide="true" class="c-blue" style="font-weight:600;">BD <?=money($fixedAssetsBHD)?></span>
     </a>
     <a href="accounts.php?type=liability" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--s3);font-size:.85rem;text-decoration:none;color:var(--red);">
-      <span>💳 Liabilities</span><span data-hide="true" style="font-weight:600;">-BD <?=number_format(abs($totalLiab),2)?></span>
+      <span>💳 Liabilities</span><span data-hide="true" style="font-weight:600;">-BD <?=money(abs($totalLiab))?></span>
     </a>
     <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:800;font-size:1rem;">
-      <span>💎 Total Wealth</span><span data-hide="true" class="c-green">BD <?=number_format($totalWealthBHD,2)?></span>
+      <span>💎 Total Wealth</span><span data-hide="true" class="c-green">BD <?=money($totalWealthBHD)?></span>
     </div>
   </div>
 </div>
@@ -230,16 +230,16 @@ require 'header.php';
 
 <!-- Monthly Summary -->
 <div class="g3">
-  <div class="card"><div class="card-title">Total Assets</div><div class="card-value c-blue">BD <?=number_format($totalAssets,2)?></div><div class="card-sub"><?=count($accounts)?> accounts</div></div>
-  <div class="card"><div class="card-title">Liabilities</div><div class="card-value c-red">BD <?=number_format(abs($totalLiab),2)?></div></div>
-  <div class="card"><div class="card-title">Net Worth</div><div class="card-value c-green">BD <?=number_format($totalAssets+$totalLiab,2)?></div></div>
+  <div class="card"><div class="card-title">Total Assets</div><div class="card-value c-blue">BD <?=money($totalAssets)?></div><div class="card-sub"><?=count($accounts)?> accounts</div></div>
+  <div class="card"><div class="card-title">Liabilities</div><div class="card-value c-red">BD <?=money(abs($totalLiab))?></div></div>
+  <div class="card"><div class="card-title">Net Worth</div><div class="card-value c-green">BD <?=money($totalAssets+$totalLiab)?></div></div>
 </div>
 
 <!-- Monthly -->
 <div class="g3">
-  <div class="card"><div class="card-title"><?=date('F')?> Income</div><div class="card-value c-green">BD <?=number_format($stats['income'],2)?></div></div>
-  <div class="card"><div class="card-title"><?=date('F')?> Expense</div><div class="card-value c-red">BD <?=number_format($stats['expense'],2)?></div></div>
-  <div class="card"><?php $sv=$stats['income']-$stats['expense'];?><div class="card-title"><?=date('F')?> Saved</div><div class="card-value <?=$sv>=0?'c-green':'c-red'?>">BD <?=number_format($sv,2)?></div></div>
+  <div class="card"><div class="card-title"><?=date('F')?> Income</div><div class="card-value c-green">BD <?=money($stats['income'])?></div></div>
+  <div class="card"><div class="card-title"><?=date('F')?> Expense</div><div class="card-value c-red">BD <?=money($stats['expense'])?></div></div>
+  <div class="card"><?php $sv=$stats['income']-$stats['expense'];?><div class="card-title"><?=date('F')?> Saved</div><div class="card-value <?=$sv>=0?'c-green':'c-red'?>">BD <?=money($sv)?></div></div>
 </div>
 
 <!-- Charts -->
@@ -292,7 +292,7 @@ require 'header.php';
             </span>
           </div>
           <span class="group-total" style="color:<?=$gcolor?>;">
-            <span data-hide="true">BD <?=number_format($gtotal,2)?></span>
+            <span data-hide="true">BD <?=money($gtotal)?></span>
           </span>
         </div>
 
@@ -314,15 +314,15 @@ require 'header.php';
             <span style="font-size:.85rem;"><?=htmlspecialchars($a['name'])?></span>
             <?php if($a['is_credit_card']): ?>
               <div style="font-size:.68rem;color:var(--muted);">
-                P:<span data-hide="true" style="color:var(--red);"><?=number_format($ccB['payable'],2)?></span>
-                O:<span data-hide="true" style="color:var(--orange);"><?=number_format($ccB['outstanding'],2)?></span>
+                P:<span data-hide="true" style="color:var(--red);"><?=money($ccB['payable'])?></span>
+                O:<span data-hide="true" style="color:var(--orange);"><?=money($ccB['outstanding'])?></span>
               </div>
             <?php elseif($a['currency']!=='BHD'): ?>
-              <div data-hide="true" style="font-size:.68rem;color:var(--muted);">≈ BD <?=number_format(toBHD($dispBal,$a['currency']),2)?></div>
+              <div data-hide="true" style="font-size:.68rem;color:var(--muted);">≈ BD <?=money(toBHD($dispBal,$a['currency']))?></div>
             <?php endif; ?>
           </div>
           <span class="acc-amount" data-hide="true" style="color:<?=$balColor?>;">
-            <?=number_format($dispBal,2)?> <?=$a['currency']?>
+            <?=money($dispBal, $a['currency'])?> <?=$a['currency']?>
           </span>
         </a>
         <?php endforeach;?>
@@ -347,7 +347,7 @@ require 'header.php';
           <?php foreach($recent as $t):$bc=$t['type']==='income'?'badge-inc':($t['type']==='expense'?'badge-exp':'badge-tra');?>
           <tr>
             <td style="color:var(--muted);white-space:nowrap;font-size:.82rem;"><?=date('d M',strtotime($t['txn_date']))?></td>
-            <td><span data-hide="true" class="badge <?=$bc?>"><?=number_format((float)$t['amount'],2)?> <?=$t['currency']?></span></td>
+            <td><span data-hide="true" class="badge <?=$bc?>"><?=money((float)$t['amount'], $t['currency'])?> <?=$t['currency']?></span></td>
             <td style="font-size:.85rem;"><?=htmlspecialchars($t['category']?:ucfirst($t['type']))?></td>
             <td><a href="account_detail.php?id=<?=$t['account_id']?>" style="font-size:.82rem;"><?=htmlspecialchars($t['acc_name']??'')?></a></td>
           </tr>

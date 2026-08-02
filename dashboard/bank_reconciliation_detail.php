@@ -10,7 +10,7 @@ $st=db()->prepare("SELECT bs.*,a.name as acc_name,a.balance as app_balance,a.cur
 $st->execute([$id]); $stmt=$st->fetch();
 if(!$stmt){ header('Location: /dashboard/bank_reconciliation.php'); exit; }
 
-$pageTitle='Reconciliation: '.$stmt['acc_name']; $activePage='bank_reconciliation';
+$pageTitle='Reconciliation: '.$stmt['acc_name']; $activePage='bank_reconciliation'; $backTo='bank_reconciliation.php';
 
 // Calculate summary from statement lines
 $summary = db()->query("
@@ -73,7 +73,7 @@ require 'header.php'; ?>
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--s3);">
         <span style="font-size:.88rem;<?=isset($row['bold'])?'font-weight:700;':''?>"><?=$row['label']?></span>
         <span data-hide="true" style="font-weight:<?=isset($row['bold'])?'700':'600'?>;color:<?=$row['color']?>;font-size:.88rem;">
-            <?=number_format(abs($row['value']),3)?> <?=$stmt['currency']?>
+            <?=money(abs($row['value']), $stmt['currency'])?> <?=$stmt['currency']?>
             <?=isset($row['bold'])&&$row['label']==='Difference'?($matched?' ✅':' ⚠️'):''?>
         </span>
     </div>
@@ -84,12 +84,12 @@ require 'header.php'; ?>
 <div class="g3" style="margin-bottom:16px;">
     <div class="card">
         <div class="card-title">Total Credits</div>
-        <div class="card-value c-green" data-hide="true"><?=number_format($summary['total_credits'],3)?></div>
+        <div class="card-value c-green" data-hide="true"><?=money($summary['total_credits'])?></div>
         <div class="card-sub"><?=$stmt['currency']?></div>
     </div>
     <div class="card">
         <div class="card-title">Total Debits</div>
-        <div class="card-value c-red" data-hide="true"><?=number_format($summary['total_debits'],3)?></div>
+        <div class="card-value c-red" data-hide="true"><?=money($summary['total_debits'])?></div>
         <div class="card-sub"><?=$stmt['currency']?></div>
     </div>
     <div class="card">
@@ -104,7 +104,7 @@ require 'header.php'; ?>
     <div class="section-title" style="margin-bottom:12px;">📝 Adjustment Notes</div>
     <?php if($diff != 0): ?>
     <div style="background:var(--orange)22;border:1px solid var(--orange);border-radius:8px;padding:12px;margin-bottom:14px;font-size:.85rem;">
-        ⚠️ <strong>Difference of <?=number_format(abs($diff),3)?> <?=$stmt['currency']?> found.</strong><br>
+        ⚠️ <strong>Difference of <?=money(abs($diff), $stmt['currency'])?> <?=$stmt['currency']?> found.</strong><br>
         <?=$diff>0?'App balance is higher than statement — possible missing expense or double-counted income.':'Statement balance is higher than app — possible missing income or uncounted transaction.'?>
         <br><br>Please review and post manual adjustment entries if needed via the main transactions page.
     </div>
