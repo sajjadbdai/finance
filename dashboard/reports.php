@@ -99,6 +99,11 @@ require 'header.php';
       <div style="font-weight:600;margin-top:6px;">Portfolio Performance</div>
       <div style="font-size:.78rem;color:var(--muted);margin-top:2px;">XIRR per investment account</div>
     </a>
+    <a href="report_monthly_comparison.php" class="report-link-card">
+      <div style="font-size:1.4rem;">🆚</div>
+      <div style="font-weight:600;margin-top:6px;">Monthly Comparison</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:2px;">Compare two months side by side, drill into any number</div>
+    </a>
     <a href="balance_tools.php" class="report-link-card">
       <div style="font-size:1.4rem;">⚖️</div>
       <div style="font-weight:600;margin-top:6px;">Balance & Integrity Tools</div>
