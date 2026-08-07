@@ -66,6 +66,21 @@ function transcribeVoice(string $filePath): ?string {
     return null;
 }
 
+/**
+ * Check if a Telegram user is authorized to use this bot.
+ * Set YOUR_TELEGRAM_ID in config.php to your numeric Telegram user ID.
+ * If YOUR_TELEGRAM_ID is 0 (unset), ONLY the admin check runs.
+ * For multi-user access, add IDs to the array below.
+ */
 function isAuthorized(int $userId): bool {
-    return YOUR_TELEGRAM_ID === 0 || $userId === YOUR_TELEGRAM_ID;
+    // If no ID configured, log a warning but reject all — don't silently allow everyone
+    if (!defined('YOUR_TELEGRAM_ID') || YOUR_TELEGRAM_ID === 0) {
+        error_log('Telegram bot WARNING: YOUR_TELEGRAM_ID is not configured in config.php.');
+        return false; // Lock down until configured
+    }
+    $allowed = [YOUR_TELEGRAM_ID];
+    // Add additional Telegram user IDs here:
+    // $allowed[] = 987654321;
+
+    return in_array($userId, $allowed);
 }

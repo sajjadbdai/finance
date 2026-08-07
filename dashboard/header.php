@@ -32,6 +32,13 @@ a{color:var(--blue);text-decoration:none;}
 .ni.active{background:var(--s2);color:var(--blue);border-left-color:var(--blue);}
 .main{margin-left:220px;flex:1;min-height:100vh;}
 .topbar{background:var(--s1);border-bottom:1px solid var(--s3);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+@media print{
+  .sidebar,.topbar,.no-print{display:none !important;}
+  .main{margin-left:0 !important;}
+  .content{padding:0 !important;}
+  body{background:#fff !important;color:#000 !important;}
+  .card{border:1px solid #ccc !important;background:#fff !important;box-shadow:none !important;}
+}
 .topbar-title{font-size:1.05rem;font-weight:600;}
 .topbar-right{display:flex;align-items:center;gap:12px;font-size:.82rem;color:var(--muted);}
 .content{padding:24px;}
@@ -147,23 +154,25 @@ body.values-hidden table td:nth-child(4){
   <a href="/dashboard/index.php"        class="ni <?=$activePage==='dashboard'   ?'active':''?>"><span>📊</span> Dashboard</a>
   <a href="/dashboard/accounts.php"     class="ni <?=$activePage==='accounts'    ?'active':''?>"><span>🏦</span> Accounts</a>
   <a href="/dashboard/transactions.php" class="ni <?=$activePage==='transactions'?'active':''?>"><span>📋</span> Transactions</a>
+  <a href="/dashboard/portfolio.php"    class="ni <?=$activePage==='portfolio'   ?'active':''?>"><span>💹</span> Portfolio</a>
+  <a href="/dashboard/fixed_assets.php" class="ni <?=$activePage==='fixed_assets'?'active':''?>"><span>🏠</span> Fixed Assets</a>
+  <a href="/dashboard/categories.php"   class="ni <?=$activePage==='categories'  ?'active':''?>"><span>🏷</span> Categories</a>
   <div class="ns">Actions</div>
   <a href="/dashboard/add_transaction.php" class="ni <?=$activePage==='add_txn'   ?'active':''?>"><span>➕</span> Add Transaction</a>
   <a href="/dashboard/add_account.php"     class="ni <?=$activePage==='add_acc'  ?'active':''?>"><span>🏛</span> Add Account</a>
   <a href="/dashboard/account_groups.php"  class="ni <?=$activePage==='groups'   ?'active':''?>"><span>📁</span> Account Groups</a>
-  <a href="/dashboard/import.php"          class="ni <?=$activePage==='import'   ?'active':''?>"><span>📥</span> Import Excel</a>
   <div class="ns">Reports</div>
   <a href="/dashboard/reports.php"    class="ni <?=$activePage==='reports'    ?'active':''?>"><span>📈</span> Reports</a>
-  <a href="/dashboard/portfolio.php"  class="ni <?=$activePage==='portfolio'  ?'active':''?>"><span>💹</span> Portfolio</a>
   <a href="/dashboard/scheduled.php"  class="ni <?=$activePage==='scheduled'  ?'active':''?>"><span>⏰</span> Scheduled</a>
   <a href="/dashboard/rates.php"      class="ni <?=$activePage==='rates'      ?'active':''?>"><span>💱</span> Rates</a>
-  <a href="/dashboard/categories.php" class="ni <?=$activePage==='categories' ?'active':''?>"><span>🏷</span> Categories</a>
-  <a href="/dashboard/export.php"     class="ni <?=$activePage==='export'     ?'active':''?>"><span>📤</span> Export Data</a>
-  <div class="ns">System</div>
-  <a href="/dashboard/fixed_assets.php"   class="ni <?=$activePage==='fixed_assets'?'active':''?>"><span>🏠</span> Fixed Assets</a>
-  <a href="/dashboard/dashboard_settings.php" class="ni <?=$activePage==='settings'?'active':'';?>"><span>⚙️</span> Settings</a>
+  <div class="ns">Balance Tools</div>
+  <a href="/dashboard/balance_tools.php" class="ni <?=$activePage==='balance_tools'?'active':''?>"><span>⚖️</span> Balance Tools</a>
   <a href="bank_statements.php"    class="ni <?=$activePage==='bank_statements'?'active':''?>"><span>📄</span> Bank Statements</a>
   <a href="bank_reconciliation.php" class="ni <?=$activePage==='bank_reconciliation'?'active':''?>"><span>⚖️</span> Reconciliation</a>
+  <div class="ns">System</div>
+  <a href="/dashboard/dashboard_settings.php" class="ni <?=$activePage==='settings'?'active':'';?>"><span>⚙️</span> Settings</a>
+  <a href="/dashboard/import.php"          class="ni <?=$activePage==='import'   ?'active':''?>"><span>📥</span> Import Excel</a>
+  <a href="/dashboard/export.php"     class="ni <?=$activePage==='export'     ?'active':''?>"><span>📤</span> Export Data</a>
   <a href="/dashboard/setup.php"          class="ni <?=$activePage==='setup'?'active':''?>"><span>🤖</span> Bot Setup</a>
   <a href="/dashboard/login.php?logout=1" class="ni"><span>🔒</span> Logout</a>
 </nav>
@@ -171,6 +180,9 @@ body.values-hidden table td:nth-child(4){
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:10px;">
       <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <?php if (!empty($backTo)): ?>
+      <a href="<?=htmlspecialchars($backTo)?>" class="btn btn-ghost btn-sm" style="padding:6px 10px;" title="Back">← Back</a>
+      <?php endif; ?>
       <div class="topbar-title"><?=htmlspecialchars($pageTitle)?></div>
     </div>
     <div class="topbar-right">

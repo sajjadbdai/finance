@@ -181,12 +181,30 @@ function reverseTransaction(int $txnId): array {
 
     } elseif ($t['type'] === 'transfer' && $t['to_account_id']) {
         // swapped: reversal moves money from the ORIGINAL destination back to the ORIGINAL source
+        // A cross-currency transfer credits the destination a DIFFERENT figure from
+        // the one it debits the source. The reversal has to be recorded in the
+        // DESTINATION's own currency, using the amount that actually arrived there —
+        // otherwise the row describes a movement that never happened, and every
+        // later walk over the ledger disagrees with the stored balance.
+        $revAmt = function_exists('toAccountAmount')
+                ? toAccountAmount($amt, $cur, (int)$t['to_account_id']) : $amt;
+        $revCur = $cur;
+        try {
+            $rcSt = db()->prepare("SELECT currency FROM accounts WHERE id=?");
+            $rcSt->execute([(int)$t['to_account_id']]);
+            $rc = $rcSt->fetchColumn();
+            if ($rc) $revCur = $rc;
+        } catch (Exception $e) {}
+        // What the original source gets back, derived the same way a walk derives it,
+        // so the row and the balance can never part company by a rounding step.
+        $backAmt = function_exists('toAccountAmount')
+                 ? toAccountAmount($revAmt, $revCur, (int)$t['account_id']) : $amt;
         db()->prepare("INSERT INTO transactions (txn_date,type,amount,currency,amount_bhd,account_id,to_account_id,category,subcategory,note,source,reversal_of) VALUES (?,?,?,?,?,?,?,?,?,?,'reversal',?)")
-            ->execute([$today,'transfer',$amt,$cur,toBHD($amt,$cur),$t['to_account_id'],$t['account_id'],$t['category'],$t['subcategory'],$note,$txnId]);
+            ->execute([$today,'transfer',$revAmt,$revCur,toBHD($revAmt,$revCur),$t['to_account_id'],$t['account_id'],$t['category'],$t['subcategory'],$note,$txnId]);
         $newId = (int)db()->lastInsertId();
-        updateAccountBalance((int)$t['to_account_id'], -$amt);
-        updateAccountBalance((int)$t['account_id'], $amt);
-        postTransfer($newId, $today, $note, (int)$t['to_account_id'], (int)$t['account_id'], $amt, $cur);
+        updateAccountBalance((int)$t['to_account_id'], -$revAmt);
+        updateAccountBalance((int)$t['account_id'],     $backAmt);
+        postTransfer($newId, $today, $note, (int)$t['to_account_id'], (int)$t['account_id'], $revAmt, $revCur);
 
     } else {
         return ['ok'=>false, 'error'=>'Unrecognized transaction type or missing destination account — nothing reversed.'];

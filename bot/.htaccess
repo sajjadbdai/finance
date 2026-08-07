@@ -1,0 +1,24 @@
+# cPanel / LiteSpeed / Apache 2.4 compatible
+# NOTE: 'Require all granted' at root level causes 403 on cPanel shared hosting.
+# The server default already allows access, so we only use restrictive rules.
+Options -Indexes
+
+# Block access to log & debug files on shared hosting
+<FilesMatch "\.(log|txt)$">
+    Require all denied
+</FilesMatch>
+
+# Block direct access to deprecated/helper scripts
+<Files "callback.php">
+    Require all denied
+</Files>
+
+# Block direct access to old/deprecated webhook
+<Files "oldwebhook.php">
+    Require all denied
+</Files>
+
+# Prevent .htaccess from being read
+<Files ".htaccess">
+    Require all denied
+</Files>

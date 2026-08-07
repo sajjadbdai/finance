@@ -29,6 +29,15 @@ if(isset($_POST['do_save'])){
     $currency   = trim($_POST['currency']       ?? 'BHD');
     $accId      = (int)($_POST['account_id']    ?? 0);
     $toAccId    = (int)($_POST['to_account_id'] ?? 0) ?: null;
+    // The amount is always entered in the SOURCE ACCOUNT's currency — that is
+    // what syncCurrencyToAccount() enforces in the browser. Derive it here too,
+    // so a stale dropdown, a resubmitted form or autofill cannot mislabel it.
+    if ($accId) {
+        $curSt = db()->prepare("SELECT currency FROM accounts WHERE id=?");
+        $curSt->execute([$accId]);
+        $srcCur = $curSt->fetchColumn();
+        if ($srcCur) $currency = $srcCur;
+    }
     $cat        = trim($_POST['category']       ?? '');
     $subcat     = trim($_POST['subcategory']    ?? '');
     $note       = trim($_POST['note']           ?? '');
@@ -50,7 +59,7 @@ if(isset($_POST['do_save'])){
                     elseif($oldR['type']==='income') updateAccountBalance($oldR['account_id'], -(float)$oldR['amount']);
                     elseif($oldR['type']==='transfer'){
                         updateAccountBalance($oldR['account_id'], (float)$oldR['amount']);
-                        if($oldR['to_account_id']) updateAccountBalance($oldR['to_account_id'], -(float)$oldR['amount']);
+                        if($oldR['to_account_id']) updateAccountBalance($oldR['to_account_id'], -toAccountAmount((float)$oldR['amount'], $oldR['currency'] ?? 'BHD', (int)$oldR['to_account_id']));
                     }
                 }
                 db()->prepare("UPDATE transactions SET txn_date=?,type=?,amount=?,currency=?,amount_bhd=?,account_id=?,to_account_id=?,category=?,subcategory=?,note=? WHERE id=?")
@@ -65,7 +74,7 @@ if(isset($_POST['do_save'])){
             elseif($type==='income')    updateAccountBalance($accId,  $amount);
             elseif($type==='transfer' && $toAccId){
                 updateAccountBalance($accId,    -$amount);
-                updateAccountBalance($toAccId,   $amount);
+                updateAccountBalance($toAccId,   toAccountAmount($amount, $currency, (int)$toAccId));
             }
 
             // Bank charge as separate expense on source account

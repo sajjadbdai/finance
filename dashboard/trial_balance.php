@@ -173,7 +173,7 @@ function effect(array $t, int $accountId): float {
         if ($t['type']==='expense') return -$amt;
         if ($t['type']==='transfer') return -$amt;
     }
-    if ((int)$t['to_account_id'] === $accountId && $t['type']==='transfer') return $amt;
+    if ((int)$t['to_account_id'] === $accountId && $t['type']==='transfer') return (function_exists('toAccountAmount') ? toAccountAmount($amt, $t['currency'] ?? 'BHD', $accountId) : $amt);
     return 0.0;
 }
 

@@ -6,7 +6,7 @@ if (!isset($_SESSION['auth'])) { header('Location: login.php'); exit; }
 
 $log = syncPortfolioToAccounts();
 
-$pageTitle = 'Portfolio Sync'; $activePage = 'portfolio';
+$pageTitle = 'Portfolio Sync'; $activePage = 'portfolio'; $backTo = 'portfolio.php';
 require 'header.php';
 ?>
 <div class="card" style="max-width:500px;">

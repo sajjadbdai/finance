@@ -2,7 +2,7 @@
 require_once __DIR__ . '/db.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
-$pageTitle='Dashboard Settings'; $activePage='settings'; $activePage='dashboard';
+$pageTitle='Dashboard Settings'; $activePage='settings'; $activePage='dashboard'; $backTo='index.php';
 
 // Save settings
 if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['save_settings'])) {

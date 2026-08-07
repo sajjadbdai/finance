@@ -41,6 +41,7 @@ if (!$groups) $groups = ['Cash','Bahrain Savings A/C','Bahrain Deposit A/C','TK 
 
 $pageTitle  = 'Add Account';
 $activePage = 'add_acc';
+$backTo = 'accounts.php';
 require __DIR__ . '/header.php';
 ?>
 <div style="max-width:640px;">

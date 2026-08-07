@@ -97,7 +97,7 @@ function txnEffect(array $t, int $accountId): float {
         if ($t['type'] === 'transfer') return -$amt; // leaving as the source
     }
     if (!empty($t['to_account_id']) && (int)$t['to_account_id'] === $accountId && $t['type'] === 'transfer') {
-        return $amt; // arriving as the destination
+        return (function_exists('toAccountAmount') ? toAccountAmount($amt, $t['currency'] ?? 'BHD', $accountId) : $amt); // arriving as the destination
     }
     return 0.0;
 }

@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel'])) {
 }
 ?>
 <?php
-$pageTitle='Import Excel'; $activePage='import';
+$pageTitle='Import Excel'; $activePage='import'; $backTo='index.php';
 require 'header.php';
 ?>
 <div class="card" style="max-width:600px;">

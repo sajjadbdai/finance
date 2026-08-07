@@ -2,7 +2,7 @@
 require_once __DIR__ . '/db.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
-$pageTitle='Account Groups'; $activePage='groups';
+$pageTitle='Account Groups'; $activePage='groups'; $backTo='accounts.php';
 $msg=''; $editItem=null;
 
 // Try add group_type column

@@ -106,7 +106,7 @@ if (isset($_POST['do_confirm'])) {
             postIncome($txnId, $r['date'], $desc, $r['account_id'], $r['amount'], $r['currency']);
         } elseif ($r['type']==='transfer' && $r['to_account_id']) {
             updateAccountBalance($r['account_id'], -$r['amount']);
-            updateAccountBalance($r['to_account_id'], $r['amount']);
+            updateAccountBalance($r['to_account_id'], toAccountAmount((float)$r['amount'], $r['currency'] ?? 'BHD', (int)$r['to_account_id']));
             postTransfer($txnId, $r['date'], $desc, $r['account_id'], $r['to_account_id'], $r['amount'], $r['currency']);
         }
         $imported++;

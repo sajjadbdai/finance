@@ -45,6 +45,7 @@ foreach ($accounts as $a) {
     if ($a['is_credit_card']) {
         $ccB = getCCBalances($a);
         $totalLiab -= toBHD($ccB['total'],$a['currency']);
+        $totalAssets += toBHD($ccB['credit'] ?? 0,$a['currency']);
     } elseif ($a['type']==='asset') {
         $totalAssets += toBHD((float)$a['balance'],$a['currency']);
     } else {
@@ -274,6 +275,7 @@ require 'header.php';
                 $isCCGroup = true;
                 $ccB = getCCBalances($a);
                 $gtotal -= toBHD($ccB['total'],$a['currency']);
+                $gtotal += toBHD($ccB['credit'] ?? 0,$a['currency']);
             } else {
                 $gtotal += toBHD((float)$a['balance'],$a['currency']);
             }
@@ -302,8 +304,8 @@ require 'header.php';
           if (!($a['dashboard_show']??1)) continue;
           if ($a['is_credit_card']) {
               $ccB = getCCBalances($a);
-              $dispBal = -$ccB['total'];
-              $balColor = 'var(--red)';
+              $dispBal = ($ccB['credit'] ?? 0) - $ccB['total'];
+              $balColor = $dispBal > 0 ? 'var(--blue)' : 'var(--red)';
           } else {
               $dispBal  = (float)$a['balance'];
               $balColor = $dispBal < 0 ? 'var(--red)' : 'var(--blue)';
@@ -315,7 +317,7 @@ require 'header.php';
             <?php if($a['is_credit_card']): ?>
               <div style="font-size:.68rem;color:var(--muted);">
                 P:<span data-hide="true" style="color:var(--red);"><?=money($ccB['payable'])?></span>
-                O:<span data-hide="true" style="color:var(--orange);"><?=money($ccB['outstanding'])?></span>
+                O:<span data-hide="true" style="color:var(--orange);"><?=money($ccB['outstanding'])?></span><?php if((float)($ccB['credit'] ?? 0) > 0): ?> Cr:<span data-hide="true" style="color:var(--green);"><?=money($ccB['credit'])?></span><?php endif; ?>
               </div>
             <?php elseif($a['currency']!=='BHD'): ?>
               <div data-hide="true" style="font-size:.68rem;color:var(--muted);">≈ BD <?=money(toBHD($dispBal,$a['currency']))?></div>

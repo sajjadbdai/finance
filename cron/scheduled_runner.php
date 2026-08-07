@@ -93,9 +93,9 @@ foreach ($schedules as $s) {
         
         // Update account balances
         if ($type === 'expense') {
-            db()->prepare("UPDATE accounts SET balance=balance-? WHERE id=?")->execute([$amtBHD, $s['account_id']]);
+            db()->prepare("UPDATE accounts SET balance=balance-? WHERE id=?")->execute([$amount, $s['account_id']]);
         } elseif ($type === 'income') {
-            db()->prepare("UPDATE accounts SET balance=balance+? WHERE id=?")->execute([$amtBHD, $s['account_id']]);
+            db()->prepare("UPDATE accounts SET balance=balance+? WHERE id=?")->execute([$amount, $s['account_id']]);
         } elseif ($type === 'transfer') {
             db()->prepare("UPDATE accounts SET balance=balance-? WHERE id=?")->execute([$amount, $s['account_id']]);
             if ($s['to_account_id']) {

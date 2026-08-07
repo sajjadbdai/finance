@@ -174,7 +174,7 @@ function saveTransaction(array $parsed, string $source = 'telegram', string $raw
     elseif ($type==='income')                 updateAccountBalance($account['id'],  $amount);
     elseif ($type==='transfer' && $toAccount) {
         updateAccountBalance($account['id'],    -$amount);
-        updateAccountBalance($toAccount['id'],   $amount);
+        updateAccountBalance($toAccount['id'],   toAccountAmount($amount, $account['currency'] ?? 'BHD', (int)$toAccount['id']));
     }
 
     return $txnId;

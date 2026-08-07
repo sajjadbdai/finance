@@ -1,6 +1,9 @@
 Options -Indexes
 RewriteEngine On
 
+# Allow bot folder directly
+RewriteRule ^bot/ - [L]
+
 # If request is for existing file/directory, serve it directly
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
@@ -9,5 +12,5 @@ RewriteRule ^ - [L]
 # Rewrite root to dashboard
 RewriteRule ^$ /dashboard/index.php [L]
 
-# Clean URLs - map /accounts to /dashboard/accounts.php etc
+# Clean URLs
 RewriteRule ^dashboard/(.*)$ /dashboard/$1 [L]

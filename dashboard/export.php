@@ -59,7 +59,7 @@ if ($type === 'networth_csv') {
     fclose($out); exit;
 }
 
-$pageTitle='Export Data'; $activePage='export';
+$pageTitle='Export Data'; $activePage='export'; $backTo='index.php';
 require 'header.php';
 ?>
 <div style="max-width:600px;">
@@ -78,6 +78,16 @@ require 'header.php';
       <a href="?type=accounts_csv" class="btn btn-success">⬇️ Accounts CSV</a>
       <a href="?type=networth_csv" class="btn btn-primary">⬇️ Net Worth CSV</a>
     </div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title" style="margin-bottom:14px;">Import</div>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:10px;">Re-import a CSV that this app itself exported (not Money Manager).</div>
+    <a href="import_own_export.php" class="btn btn-primary">📥 Import Own Export</a>
+  </div>
+  <div class="card" style="border:1px solid var(--red);">
+    <div class="card-title" style="margin-bottom:14px;color:var(--red);">⚠️ Danger Zone</div>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:10px;">Permanently delete all transactions and reset balances to 0.</div>
+    <a href="reset_data.php" class="btn btn-danger">🗑️ Reset All Transactions</a>
   </div>
 </div>
 <?php require 'footer.php'; ?>

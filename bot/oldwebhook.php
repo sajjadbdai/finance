@@ -11,6 +11,13 @@ file_put_contents(__DIR__ . '/../webhook_debug.log',
     FILE_APPEND
 );
 
+// Respond to Telegram IMMEDIATELY to prevent timeout
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    echo '{"ok":true}';
+    ob_end_flush();
+    flush();
+}
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(403); exit; }
 
 $update = json_decode($input, true);
@@ -53,7 +60,7 @@ $text = trim($message['text'] ?? '');
 if (!$text) exit;
 
 // ---- Commands ----
-if (str_starts_with($text, '/')) {
+if (strpos($text, '/') === 0) {
     handleCommand($chatId, $text);
     exit;
 }
@@ -150,11 +157,112 @@ function sendConfirmMultiple(int $chatId, array $allParsed, string $raw, string 
 }
 
 // ================================================================
+function handlePriceUpdate(int $chatId, string $text): void {
+    // Format: /price SYMBOL NEW_PRICE
+    $parts = explode(' ', trim($text));
+    if (count($parts) < 3) { tgSend($chatId,"Usage: /price NVDA 95.50"); return; }
+    $symbol = strtoupper($parts[1]);
+    $price  = (float)$parts[2];
+    try {
+        $st = db()->prepare("UPDATE portfolio SET current_price=?,last_updated=NOW() WHERE UPPER(symbol)=?");
+        $st->execute([$price,$symbol]);
+        $rows = $st->rowCount();
+        if ($rows) tgSend($chatId,"✅ Updated <b>{$symbol}</b> price to {$price}");
+        else tgSend($chatId,"❌ Symbol {$symbol} not found in portfolio.");
+    } catch(Exception $e){ tgSend($chatId,"❌ ".$e->getMessage()); }
+}
+
+function handleAddStock(int $chatId, string $text): void {
+    // Format: /stock SYMBOL QTY AVG_COST CURRENCY MARKET
+    // Example: /stock NVDA 10 95.50 USD USA
+    // Example: /stock NBL 2500 7.50 BDT BD
+    $parts = explode(' ', trim($text));
+    if (count($parts) < 5) {
+        tgSend($chatId,
+            "Usage: <code>/stock SYMBOL QTY AVG_COST CURRENCY MARKET</code>\n\n".
+            "Examples:\n".
+            "<code>/stock NVDA 10 95.50 USD USA</code>\n".
+            "<code>/stock NBL 2500 7.50 BDT BD</code>\n".
+            "<code>/stock BTC 0.5 45000 USD Crypto</code>\n\n".
+            "Markets: BD, USA, UK, Crypto, Other"
+        );
+        return;
+    }
+    $symbol   = strtoupper($parts[1]);
+    $qty      = (float)$parts[2];
+    $avgCost  = (float)$parts[3];
+    $currency = strtoupper($parts[4]);
+    $market   = ucfirst(strtolower($parts[5] ?? 'BD'));
+    if (!in_array($market,['BD','USA','UK','Crypto','Other'])) $market='Other';
+
+    try {
+        // Check if exists
+        $ex = db()->prepare("SELECT id,company_name FROM portfolio WHERE UPPER(symbol)=?");
+        $ex->execute([$symbol]);
+        $existing = $ex->fetch();
+        if ($existing) {
+            db()->prepare("UPDATE portfolio SET quantity=?,avg_cost=?,currency=?,market=?,last_updated=NOW() WHERE UPPER(symbol)=?")
+               ->execute([$qty,$avgCost,$currency,$market,$symbol]);
+            tgSend($chatId,"✅ Updated <b>{$symbol}</b>: {$qty} @ {$avgCost} {$currency} ({$market})");
+        } else {
+            db()->prepare("INSERT INTO portfolio (symbol,company_name,market,quantity,avg_cost,currency,current_price) VALUES (?,?,?,?,?,?,?)")
+               ->execute([$symbol,$symbol,$market,$qty,$avgCost,$currency,$avgCost]);
+            tgSend($chatId,"✅ Added <b>{$symbol}</b>: {$qty} @ {$avgCost} {$currency} ({$market})\nUpdate price with: /price {$symbol} CURRENT_PRICE");
+        }
+    } catch(Exception $e){ tgSend($chatId,"❌ ".$e->getMessage()); }
+}
+
+function sendPortfolioSummary(int $chatId): void {
+    try {
+        $holdings = db()->query(
+            "SELECT p.*, ROUND((p.quantity*p.current_price)-(p.quantity*p.avg_cost),2) as pl,
+                    ROUND(((p.current_price-p.avg_cost)/p.avg_cost)*100,2) as pl_pct
+             FROM portfolio p ORDER BY p.market, p.symbol"
+        )->fetchAll();
+    } catch(Exception $e) { tgSend($chatId,"❌ Portfolio table not found."); return; }
+
+    if (!$holdings) { tgSend($chatId,"📊 No portfolio holdings yet.\nAdd via: /stock NVDA 1 100 USD USA"); return; }
+
+    $msg = "💹 <b>Portfolio Summary</b>\n";
+    $msg .= date('d M Y H:i')."\n\n";
+
+    $markets = []; $totalCostBHD=0; $totalValBHD=0;
+    foreach($holdings as $h) $markets[$h['market']][]=$h;
+
+    foreach($markets as $mkt=>$items) {
+        $mktLabel=['BD'=>'🇧🇩','USA'=>'🇺🇸','UK'=>'🇬🇧','Crypto'=>'🪙','Other'=>'🌐'][$mkt]??'';
+        $msg .= "\n{$mktLabel} <b>{$mkt}</b>\n";
+        $mktCost=0; $mktVal=0;
+        foreach($items as $h) {
+            $cost  = (float)$h['quantity']*(float)$h['avg_cost'];
+            $val   = (float)$h['quantity']*(float)$h['current_price'];
+            $pl    = (float)$h['pl'];
+            $plPct = (float)$h['pl_pct'];
+            $plSign= $pl>=0?'+':'-';
+            $plEmoji=$pl>=0?'📈':'📉';
+            $msg .= "  <b>{$h['symbol']}</b> {$h['quantity']} @ {$h['avg_cost']} → {$h['current_price']} {$h['currency']}\n";
+            $msg .= "  {$plEmoji} P&L: {$plSign}".abs(round($pl,2))." (".abs($plPct)."%)\n";
+            $mktCost+=$cost; $mktVal+=$val;
+        }
+        $mktPL=$mktVal-$mktCost;
+        $msg .= "  <i>Market total: ".round($mktVal,2)." | P&L: ".($mktPL>=0?'+':'').round($mktPL,2)."</i>\n";
+    }
+    $msg .= "\n📌 Update price: <code>/price NVDA 95.50</code>";
+    tgSend($chatId, $msg);
+}
+
+// ================================================================
 function handleCallback(array $cb): void {
     $chatId     = (int)$cb['message']['chat']['id'];
     $msgId      = (int)$cb['message']['message_id'];
     $data       = $cb['data'];
     $callbackId = $cb['id'];
+
+    // --- Authorization check ---
+    $callbackUserId = (int)($cb['from']['id'] ?? 0);
+    if (!isAuthorized($callbackUserId)) {
+        exit; // Silently ignore unauthorized callbacks
+    }
 
     // Acknowledge button press
     $ch = curl_init(TELEGRAM_API . '/answerCallbackQuery');
@@ -181,6 +289,13 @@ function handleCallback(array $cb): void {
     }
 
     $ctx = json_decode($session['context'], true);
+
+    if (!$ctx || !isset($ctx['mode'])) {
+        tgSend($chatId, "⏰ Session data corrupted. Please re-send your transaction.");
+        db()->prepare("UPDATE bot_sessions SET state='idle', context='' WHERE telegram_id=?")
+           ->execute([$chatId]);
+        return;
+    }
 
     if ($data === 'confirm_yes') {
         $mode = $ctx['mode'] ?? 'single';
@@ -270,12 +385,15 @@ function handleCommand(int $chatId, string $text): void {
             );
             break;
         case '/balance':   sendBalanceSummary($chatId); break;
+        case '/portfolio': sendPortfolioSummary($chatId); break;
         case '/today':     sendTodaySummary($chatId);   break;
         case '/monthly':   sendMonthlySummary($chatId); break;
         case '/accounts':  sendAccountsList($chatId);   break;
         case '/rates':     sendRates($chatId);           break;
         case '/report':    sendWeeklyReport($chatId);   break;
         default:
+            if (strpos($text, '/price ') === 0) { handlePriceUpdate($chatId, $text); return; }
+            if (strpos($text, '/stock ') === 0) { handleAddStock($chatId, $text); return; }
             tgSend($chatId, "Unknown command. Type /help");
     }
 }

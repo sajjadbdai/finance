@@ -68,7 +68,7 @@ function txnEffect(array $t, int $accountId): float {
         if ($t['type']==='transfer') return -$amt; // money leaving as the source
     }
     if ((int)$t['to_account_id'] === $accountId && $t['type']==='transfer') {
-        return $amt; // money arriving as the destination
+        return (function_exists('toAccountAmount') ? toAccountAmount($amt, $t['currency'] ?? 'BHD', $accountId) : $amt); // money arriving as the destination
     }
     return 0.0;
 }
@@ -77,7 +77,17 @@ function txnEffect(array $t, int $accountId): float {
 // movement we know about.
 $netAll = 0.0;
 foreach ($allTxns as $t) $netAll += txnEffect($t, $id);
-$trueOpening = $currentBalance - $netAll;
+// The opening balance is a FACT, not a plug. When accounts.opening_balance
+// is set we use it verbatim, so nothing can ever shift it. The walk and the
+// stored balance then become two INDEPENDENT figures — and any gap between
+// them is real drift, shown on the card rather than absorbed in silence.
+$storedOpening = (isset($account['opening_balance'])
+                  && $account['opening_balance'] !== null
+                  && $account['opening_balance'] !== '')
+                 ? (float)$account['opening_balance'] : null;
+$trueOpening  = $storedOpening !== null ? $storedOpening : ($currentBalance - $netAll);
+$openingDrift = $storedOpening !== null
+                 ? round(($storedOpening + $netAll) - $currentBalance, 4) : 0.0;
 
 // Walk forward once, stamping a running balance onto every row.
 $running = $trueOpening;
@@ -120,7 +130,7 @@ foreach ($periodTxns as $t) {
     if ($t['type']==='income' && $isSource)       { $sumIncome += (float)$t['amount']; $cntIncome++; }
     elseif ($t['type']==='expense' && $isSource)  { $sumExpense += (float)$t['amount']; $cntExpense++; }
     elseif ($t['type']==='transfer' && $isSource) { $sumTransferOut += (float)$t['amount']; $cntTransferOut++; }
-    elseif ($t['type']==='transfer' && !$isSource){ $sumTransferIn  += (float)$t['amount']; $cntTransferIn++; }
+    elseif ($t['type']==='transfer' && !$isSource){ $sumTransferIn  += abs((float)($t['_effect'] ?? $t['amount'])); $cntTransferIn++; }
 }
 
 // ── Rows to actually DISPLAY (type/search filters applied here only) ──
@@ -319,7 +329,7 @@ require 'header.php';
     <div class="card">
       <div class="card-title">Opening Balance</div>
       <div class="card-value c-blue" data-hide="true"><?=money($openingBal, $account['currency'])?></div>
-      <div class="card-sub"><?=$account['currency']?></div>
+      <div class="card-sub"><?=$account['currency']?><?php if(isset($openingDrift) && abs($openingDrift)>=0.005): ?> <span style="color:var(--red);" title="The walk does not reach the stored balance. This gap used to be hidden inside the opening figure.">drift <?=money($openingDrift, $account['currency'])?></span><?php endif; ?></div>
     </div>
     <div class="card">
       <div class="card-title">Income</div>

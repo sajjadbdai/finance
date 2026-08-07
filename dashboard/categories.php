@@ -2,7 +2,7 @@
 require_once __DIR__ . '/db.php';
 if (session_status()===PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['auth'])) { header('Location: /dashboard/login.php'); exit; }
-$pageTitle='Categories'; $activePage='categories';
+$pageTitle='Categories'; $activePage='categories'; $backTo='index.php';
 $msg=''; $editItem=null;
 
 // Delete
